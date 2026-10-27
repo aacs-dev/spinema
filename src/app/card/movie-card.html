@@ -1,0 +1,195 @@
+@let m = movie();
+<article class="ticket" aria-labelledby="ticket-title">
+  <div class="ticket-body">
+    <div class="ticket-head">
+      <p class="head-name">{{ t.card.cinema }}</p>
+      <p class="head-meta">
+        <span>{{ t.card.hall }}</span>
+        <span>{{ t.card.series }} · {{ t.card.number(m.id) }}</span>
+      </p>
+    </div>
+
+    @if (origin() === 'shared') {
+      <p class="shared-intro">{{ t.card.sharedIntro }}</p>
+    }
+
+    <div class="headline">
+      @if (posterUrl(); as src) {
+        <img class="poster" [src]="src" [alt]="t.card.posterAlt(m.title)" width="342" height="513" />
+      } @else {
+        <span class="poster poster-missing" aria-hidden="true"></span>
+      }
+
+      <div class="titles">
+        <h2 #title id="ticket-title" class="title" tabindex="-1">{{ m.title }}</h2>
+        @if (showOriginalTitle()) {
+          <p class="original" [attr.lang]="m.originalLanguage">
+            <span class="sr-only">{{ t.card.originalTitle }}: </span>{{ m.originalTitle }}
+          </p>
+        }
+
+        @if (m.genres.length > 0) {
+          <p class="genres"><span class="sr-only">{{ t.card.genresLabel }}: </span>{{ m.genres.join(', ') }}</p>
+        }
+      </div>
+    </div>
+
+    <!-- Printed fields, like the boxes on a cinema ticket. -->
+    <dl class="fields">
+      <div class="field">
+        <dt>{{ t.card.yearLabel }}</dt>
+        <dd>{{ m.year ?? t.card.unknown }}</dd>
+      </div>
+      <div class="field">
+        <dt>{{ t.card.runtimeLabel }}</dt>
+        <dd>{{ runtime() ?? t.card.unknown }}</dd>
+      </div>
+      <div class="field">
+        <dt>{{ t.card.ratingLabel }}</dt>
+        <dd>{{ rating() ?? t.card.unknown }}</dd>
+      </div>
+    </dl>
+
+    <div class="overview">
+      @if (m.overview) {
+        @if (m.overviewLanguage === 'en') {
+          <p class="overview-note">{{ t.card.overviewEnglish }}</p>
+        }
+        <p
+          id="overview-text"
+          class="overview-text"
+          [class.is-clamped]="longOverview() && !overviewOpen()"
+          [attr.lang]="m.overviewLanguage === 'en' ? 'en' : null"
+        >{{ m.overview }}</p>
+        @if (longOverview()) {
+          <button
+            type="button"
+            class="link-btn more-btn"
+            aria-controls="overview-text"
+            [attr.aria-expanded]="overviewOpen()"
+            (click)="overviewOpen.set(!overviewOpen())"
+          >
+            {{ overviewOpen() ? t.card.readLess : t.card.readMore }}
+          </button>
+        }
+      } @else {
+        <p>{{ t.card.noOverview }}</p>
+      }
+    </div>
+
+    @if (m.trailerKey) {
+      <button type="button" class="btn btn-secondary trailer-btn" (click)="trailer.emit()">
+        <app-icon name="play" />
+        {{ t.card.trailer }}
+      </button>
+    }
+
+    <section class="where" aria-labelledby="where-title">
+      <h3 id="where-title" class="where-title">{{ t.card.whereToWatch(region()) }}</h3>
+      @for (group of providerGroups(); track group.kind) {
+        <div class="provider-row">
+          <p class="provider-kind">{{ t.card.providerKinds[group.kind] }}</p>
+          <ul class="logos" [attr.aria-label]="t.card.providerKinds[group.kind]">
+            @for (provider of group.providers; track provider.provider_id) {
+              <li>
+                @if (logoUrl(provider); as logo) {
+                  <img [src]="logo" [alt]="provider.provider_name" [title]="provider.provider_name" width="44" height="44" loading="lazy" />
+                } @else {
+                  <span class="logo-text">{{ provider.provider_name }}</span>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      } @empty {
+        <p class="no-providers">{{ t.card.noProviders(region()) }}</p>
+      }
+      <p class="attribution">
+        <a href="https://www.justwatch.com" target="_blank" rel="noopener noreferrer">{{ t.card.justWatch }}</a>
+        @if (providerLink(); as link) {
+          <a [href]="link" target="_blank" rel="noopener noreferrer">{{ t.card.allOptions }}</a>
+        }
+      </p>
+    </section>
+  </div>
+
+  <div class="ticket-stub">
+    <dl class="stub-fields">
+      <div>
+        <dt>{{ t.card.rowLabel }}</dt>
+        <dd>{{ seat().row }}</dd>
+      </div>
+      <div>
+        <dt>{{ t.card.seatLabel }}</dt>
+        <dd>{{ seat().seat }}</dd>
+      </div>
+      <div class="stub-date">
+        <dt>{{ t.card.dateLabel }}</dt>
+        <dd>{{ dateLabel() }}</dd>
+      </div>
+    </dl>
+    <!-- Before "Îl vedem!" the ticket is valid tonight; afterwards the usher has stamped it. -->
+    <div class="validity">
+      @if (accepted()) {
+        <p class="stamp">
+          <span class="stamp-word">{{ t.card.stamp }}</span>
+          <span class="stamp-date">{{ dateLabel() }}</span>
+        </p>
+      } @else {
+        <p class="valid">{{ t.card.validTonight }}</p>
+      }
+    </div>
+
+    <div class="actions">
+      @if (origin() === 'shared') {
+        <button type="button" class="btn btn-primary" (click)="spinYourself.emit()">{{ t.card.spinYourself }}</button>
+      } @else {
+        <button
+          type="button"
+          class="btn btn-primary"
+          [class.is-done]="accepted()"
+          [attr.aria-disabled]="accepted() ? 'true' : null"
+          (click)="accept.emit()"
+        >
+          {{ accepted() ? t.card.accepted : t.card.accept }}
+        </button>
+
+        @if (origin() === 'spin') {
+          @if (tokens() > 0) {
+            <button
+              type="button"
+              class="btn btn-secondary"
+              aria-controls="respin-options"
+              [attr.aria-expanded]="respinOpen()"
+              (click)="respinOpen.set(!respinOpen())"
+            >
+              {{ t.card.respin }}
+              <span class="cost">· {{ t.card.respinCost }}</span>
+            </button>
+            <div id="respin-options" class="respin-options" [hidden]="!respinOpen()">
+              <button type="button" class="btn btn-secondary" (click)="respinMovie.emit()">{{ t.card.respinMovie }}</button>
+              <button type="button" class="btn btn-secondary" (click)="respinGenre.emit()">{{ t.card.respinGenre }}</button>
+            </div>
+          } @else {
+            <button type="button" class="btn btn-secondary btn-spent" disabled>{{ t.card.noTokens }}</button>
+          }
+        } @else {
+          <button type="button" class="btn btn-secondary" (click)="back.emit()">{{ t.card.backToWheel }}</button>
+        }
+      }
+
+      <div class="secondary-actions">
+        <button type="button" class="btn btn-secondary" [attr.aria-pressed]="saved()" (click)="toggleSaved.emit()">
+          <app-icon [name]="saved() ? 'bookmark-filled' : 'bookmark'" />
+          {{ saved() ? t.card.saved : t.card.save }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="share.emit()">
+          <app-icon name="share" />
+          {{ t.card.share }}
+        </button>
+      </div>
+
+      <p class="notice" role="status">{{ notice() }}</p>
+    </div>
+  </div>
+</article>

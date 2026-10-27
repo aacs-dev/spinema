@@ -1,0 +1,12 @@
+name = "spinema-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# Not secret: the origins allowed to call the proxy (GitHub Pages site and local dev).
+[vars]
+ALLOWED_ORIGINS = "https://aacs-dev.github.io,http://localhost:4200"
+
+# The TMDB token is a secret and never lives in this file:
+#   npx wrangler secret put TMDB_READ_TOKEN
+# For `wrangler dev`, put it in worker/.dev.vars instead (git-ignored):
+#   TMDB_READ_TOKEN=eyJhbGciOi...

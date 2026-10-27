@@ -1,0 +1,173 @@
+:host {
+  display: block;
+}
+
+/* The projection booth is dark in both themes: the posters are the only bright thing. */
+.booth {
+  --poster-w: min(200px, 50vw);
+  --frame-h: calc(var(--poster-w) * 1.5 + 20px);
+  --booth-bg: #150a0c;
+  --booth-text: #f1ebe0;
+  --film: #0d0607;
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem 1.5rem;
+  background: var(--booth-bg);
+  color: var(--booth-text);
+}
+
+.genre-line {
+  display: grid;
+  justify-items: center;
+  gap: 0.125rem;
+  margin: 0;
+}
+
+.genre-caption {
+  font-size: 0.9375rem;
+  color: #c8b8af;
+}
+
+.genre-name {
+  font-family: var(--font-marquee);
+  font-weight: 800;
+  font-size: clamp(2.5rem, 11vw, 3.25rem);
+  line-height: 1;
+  color: var(--bec);
+  text-shadow: 0 0 18px rgb(255 227 161 / 0.45);
+}
+
+.projection {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  padding-top: 1.75rem;
+}
+
+.lens {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bec);
+  transform: translateX(-50%);
+}
+
+/* A flat translucent wedge of light from the lens to the gate. */
+.beam {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: calc(var(--poster-w) + 120px);
+  height: calc(var(--frame-h) * 1.5 + 1.75rem);
+  transform: translateX(-50%);
+  background: rgb(255 227 161 / 0.1);
+  clip-path: polygon(47% 0, 53% 0, 100% 100%, 0 100%);
+}
+
+.is-rolling .beam {
+  animation: flicker 0.18s steps(2, end) infinite;
+}
+
+@keyframes flicker {
+  50% {
+    opacity: 0.75;
+  }
+}
+
+.gate {
+  position: relative;
+  width: calc(var(--poster-w) + 52px);
+  height: calc(var(--frame-h) * 1.5);
+  overflow: hidden;
+  border: 6px solid var(--lambriu);
+  background: var(--film);
+}
+
+/* Neighbouring frames stay visible but dim, like film outside the projector gate. */
+.gate::before,
+.gate::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  height: calc(var(--frame-h) * 0.25);
+  background: rgb(13 6 7 / 0.62);
+  pointer-events: none;
+}
+
+.gate::before {
+  top: 0;
+  border-bottom: 2px solid var(--alama-decor);
+}
+
+.gate::after {
+  bottom: 0;
+  border-top: 2px solid var(--alama-decor);
+}
+
+.strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  will-change: transform;
+}
+
+/* Sprocket holes on both edges travel with the film. */
+.strip::before,
+.strip::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='24'%3E%3Crect x='3' y='5' width='10' height='14' rx='2' fill='%23e9dcc4' fill-opacity='0.55'/%3E%3C/svg%3E");
+  background-repeat: repeat-y;
+}
+
+.strip::before {
+  left: 4px;
+}
+
+.strip::after {
+  right: 4px;
+}
+
+.frame {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: var(--frame-h);
+}
+
+.frame img {
+  display: block;
+  width: var(--poster-w);
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  background: #2a1a17;
+}
+
+.gate-empty {
+  position: absolute;
+  inset: calc(var(--frame-h) * 0.25) 26px;
+  border: 2px dashed rgb(233 220 196 / 0.35);
+}
+
+.status {
+  margin: 0;
+  font-size: 1rem;
+  color: #c8b8af;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-rolling .beam {
+    animation: none;
+  }
+}

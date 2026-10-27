@@ -1,0 +1,26 @@
+<section class="booth" aria-labelledby="reel-genre">
+  <p class="genre-line">
+    <span class="genre-caption">{{ t.reel.genreOfTheNight }}</span>
+    <span id="reel-genre" class="genre-name">{{ genreName() }}</span>
+  </p>
+
+  <div class="projection" [class.is-rolling]="rolling()">
+    <span class="lens" aria-hidden="true"></span>
+    <span class="beam" aria-hidden="true"></span>
+    <div #gate class="gate" aria-hidden="true">
+      @if (reel()) {
+        <div #strip class="strip">
+          @for (frame of frames(); track $index) {
+            <div class="frame">
+              <img [src]="frame.posterUrl" alt="" width="200" height="300" decoding="async" />
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="gate-empty"></div>
+      }
+    </div>
+  </div>
+
+  <p class="status">{{ reel() ? t.reel.rolling : t.reel.loading }}</p>
+</section>

@@ -1,0 +1,61 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Unit tests (headless)
+        run: npx ng test --watch=false
+
+      - name: Build
+        run: npx ng build --base-href /spinema/
+
+      - name: SPA fallback and disable Jekyll
+        run: |
+          cp dist/spinema/browser/index.html dist/spinema/browser/404.html
+          touch dist/spinema/browser/.nojekyll
+
+      - name: Make sure no TMDB credential reached the bundle
+        run: |
+          if grep -rEil "api_key|TMDB_READ_TOKEN|eyJhbGciOi" dist/spinema/browser; then
+            echo "::error::Found something that looks like a TMDB credential in the build output."
+            exit 1
+          fi
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/spinema/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

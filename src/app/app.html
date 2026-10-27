@@ -1,0 +1,161 @@
+<div class="shell">
+  <header class="topbar">
+    <h1 class="wordmark">{{ t.appName }}</h1>
+    <div class="topbar-actions">
+      <app-token-counter [left]="night.tokens()" />
+      <button type="button" class="icon-btn" [attr.aria-label]="t.header.openHistory" (click)="historyOpen.set(true)">
+        <app-icon name="list" />
+      </button>
+      <button type="button" class="icon-btn" [attr.aria-label]="t.header.openSettings" (click)="settingsOpen.set(true)">
+        <app-icon name="settings" />
+      </button>
+    </div>
+  </header>
+
+  <main class="stage">
+    @switch (store.view()) {
+      @case ('wheel') {
+        <section class="start" aria-labelledby="hero-title">
+          <div class="hero">
+            <h2 id="hero-title" class="hero-title">{{ t.hero.title }}</h2>
+            <p class="hero-sub">{{ t.hero.subtitle }}</p>
+          </div>
+
+          <app-genre-wheel
+            class="start-wheel"
+            [genres]="store.genres()"
+            [rotation]="store.rotation()"
+            [durationMs]="store.spinDuration()"
+            [spinning]="store.spinning()"
+            [litIndex]="litIndex()"
+            [disabled]="!store.genresReady() || outOfTokens()"
+            [focusOnInit]="focusWheel()"
+            describedBy="wheel-hint"
+            (spin)="store.spin()"
+          />
+
+          <div class="start-status">
+            @if (litIndex() !== null && store.genre(); as genre) {
+              <p class="chosen-genre">{{ genre.name }}</p>
+            } @else {
+              <p id="wheel-hint" class="hint">{{ wheelHint() }}</p>
+            }
+            @if (outOfTokens() && night.lastSeenId() !== null) {
+              <button type="button" class="btn btn-primary" (click)="openTonightsMovie()">{{ t.wheel.seeTonightsMovie }}</button>
+            }
+          </div>
+
+          <!-- Lobby letterboard: tonight's filters, and the way into settings. -->
+          <button type="button" class="letterboard" (click)="openFilters()">
+            <span class="lb-title">{{ t.schedule.title }}</span>
+            <span class="lb-row">{{ runtimeLine() }}</span>
+            <span class="lb-row">{{ t.schedule.region(settings.region()) }}</span>
+            <span class="lb-change">{{ t.schedule.change }}</span>
+          </button>
+        </section>
+      }
+
+      @case ('reel') {
+        <app-poster-reel [reel]="store.reel()" [genreName]="store.genre()?.name ?? ''" />
+      }
+
+      @case ('loading') {
+        <p class="loading-note" appAutofocus tabindex="-1">
+          {{ store.origin() === 'spin' ? t.reel.loading : t.card.loading }}
+        </p>
+      }
+
+      @case ('card') {
+        @if (store.movie(); as movie) {
+          <app-movie-card
+            [movie]="movie"
+            [origin]="store.origin()"
+            [region]="settings.region()"
+            [tokens]="night.tokens()"
+            [saved]="library.savedIds().has(movie.id)"
+            [accepted]="store.accepted()"
+            [notice]="store.notice()"
+            [nightStartedAt]="night.night().startedAt"
+            (accept)="store.accept()"
+            (respinMovie)="store.respinMovie()"
+            (respinGenre)="store.respinGenre()"
+            (toggleSaved)="store.toggleSaved()"
+            (share)="store.shareMovie()"
+            (trailer)="trailerOpen.set(true)"
+            (spinYourself)="store.backToWheel()"
+            (back)="store.backToWheel()"
+          />
+        }
+      }
+
+      @case ('error') {
+        <section class="message" aria-labelledby="message-title">
+          <h2 id="message-title" class="message-title" appAutofocus tabindex="-1">
+            @switch (store.errorKind()) {
+              @case ('genres') { {{ t.errors.genres }} }
+              @case ('details') { {{ t.errors.details }} }
+              @case ('notFound') { {{ t.errors.notFound }} }
+              @default { {{ t.errors.movies }} }
+            }
+          </h2>
+          @if (store.errorKind() === 'notFound') {
+            <button type="button" class="btn btn-primary" (click)="store.backToWheel()">{{ t.card.backToWheel }}</button>
+          } @else {
+            <button type="button" class="btn btn-primary" (click)="store.retry()">{{ t.errors.retry }}</button>
+          }
+        </section>
+      }
+
+      @case ('empty') {
+        <section class="message" aria-labelledby="message-title">
+          <h2 id="message-title" class="message-title" appAutofocus tabindex="-1">{{ t.empty.title }}</h2>
+          <p>{{ t.empty.body }}</p>
+          <div class="message-actions">
+            <button type="button" class="btn btn-primary" (click)="store.spin()">{{ t.empty.otherGenre }}</button>
+            <button type="button" class="btn btn-secondary" (click)="openFilters()">{{ t.empty.openSettings }}</button>
+          </div>
+        </section>
+      }
+    }
+  </main>
+
+  <footer class="footer">
+    <button type="button" class="link-btn" (click)="aboutOpen.set(true)">{{ t.about.title }}</button>
+  </footer>
+
+  <p class="sr-only" aria-live="polite" aria-atomic="true">{{ store.announcement() }}</p>
+</div>
+
+@defer (when settingsOpen(); prefetch on idle) {
+  <app-settings-panel
+    [open]="settingsOpen()"
+    [settings]="settings.settings()"
+    (change)="updateSettings($event)"
+    (newNight)="store.newNight()"
+    (about)="openAbout()"
+    (closed)="settingsOpen.set(false)"
+  />
+}
+
+@defer (when historyOpen(); prefetch on idle) {
+  <app-history-drawer
+    [open]="historyOpen()"
+    [history]="library.history()"
+    [watchlist]="library.watchlist()"
+    (openMovie)="openFromLibrary($event)"
+    (remove)="library.removeSaved($event)"
+    (closed)="historyOpen.set(false)"
+  />
+}
+
+@defer (when aboutOpen(); prefetch on idle) {
+  <app-about-dialog [open]="aboutOpen()" (closed)="aboutOpen.set(false)" />
+}
+
+@defer (when trailerOpen(); prefetch on idle) {
+  @if (store.movie(); as movie) {
+    @if (movie.trailerKey; as key) {
+      <app-trailer-modal [open]="trailerOpen()" [videoKey]="key" [title]="movie.title" (closed)="trailerOpen.set(false)" />
+    }
+  }
+}

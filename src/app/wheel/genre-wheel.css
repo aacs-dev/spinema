@@ -1,0 +1,301 @@
+:host {
+  display: block;
+  width: min(100%, 460px);
+  margin-inline: auto;
+}
+
+.wheel {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.wheel[aria-disabled='true'] {
+  cursor: default;
+}
+
+.wheel:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 6px;
+}
+
+.floor-shadow,
+.marquee,
+.lights,
+.rotor,
+.rotor-shade,
+.hub,
+.pointer {
+  position: absolute;
+  display: block;
+}
+
+/* The wheel stands on the floor: a soft contact shadow under the frame. */
+.floor-shadow {
+  left: 10%;
+  right: 10%;
+  bottom: -7%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--shadow), transparent);
+}
+
+.marquee,
+.lights {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ring-frame {
+  fill: var(--lambriu);
+}
+
+.ring-rim {
+  fill: none;
+  stroke: var(--alama-decor);
+}
+
+.ring-bevel {
+  fill: none;
+  stroke: rgb(255 227 161 / 0.16);
+  stroke-width: 1;
+}
+
+.ring-edge {
+  fill: none;
+  stroke: rgb(0 0 0 / 0.4);
+  stroke-width: 3;
+}
+
+/* Bulbs: a socket, the dim glass, and a lit layer that chases in three groups. */
+.socket {
+  fill: #23120b;
+}
+
+.bulb-off {
+  fill: #6e5c3f;
+}
+
+.halo {
+  fill: var(--bec);
+  opacity: 0.3;
+}
+
+.bulb-on {
+  fill: var(--bec);
+}
+
+.glint {
+  fill: #fff;
+  opacity: 0.85;
+}
+
+.lights {
+  --chase: 1.8s;
+  opacity: 0.12;
+  pointer-events: none;
+  will-change: opacity;
+  animation: chase var(--chase) linear infinite;
+}
+
+.is-spinning .lights {
+  --chase: 0.42s;
+}
+
+.p1 {
+  animation-delay: calc(var(--chase) / -3);
+}
+
+.p2 {
+  animation-delay: calc(var(--chase) * -2 / 3);
+}
+
+.is-lit .lights {
+  animation: blink 0.5s steps(1, end) 3;
+  opacity: 1;
+}
+
+@keyframes chase {
+  0%,
+  30% {
+    opacity: 1;
+  }
+  36%,
+  100% {
+    opacity: 0.12;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.12;
+  }
+}
+
+.rotor {
+  inset: 8%;
+  border-radius: 50%;
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.12, 0.8, 0.14, 1);
+}
+
+.is-spinning .rotor {
+  will-change: transform;
+}
+
+.rotor svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* A static, slightly concave shade over the turning disc gives it depth. */
+.rotor-shade {
+  inset: 8%;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.3),
+    inset 0 10px 22px rgb(0 0 0 / 0.28),
+    inset 0 -6px 14px rgb(255 227 161 / 0.08);
+  pointer-events: none;
+}
+
+.seg {
+  stroke: var(--alama-decor);
+  stroke-width: 1.25;
+}
+
+.seg-catifea {
+  fill: var(--catifea);
+}
+
+.seg-alama {
+  fill: var(--alama-decor);
+}
+
+.seg-lambriu {
+  fill: var(--lambriu);
+}
+
+.seg-lit {
+  fill: rgb(255 227 161 / 0.3);
+  stroke: var(--bec);
+  stroke-width: 3;
+}
+
+.inner-ring {
+  fill: none;
+  stroke: var(--alama-decor);
+  stroke-width: 1.5;
+  opacity: 0.75;
+}
+
+.rivet {
+  fill: var(--alama-decor);
+  stroke: rgb(35 18 11 / 0.6);
+  stroke-width: 1;
+}
+
+.seg-label {
+  font-family: var(--font-display);
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.label-catifea,
+.label-lambriu {
+  fill: #f6f1e8;
+}
+
+.label-alama {
+  fill: #1a2321;
+}
+
+/* The hub is the "Învârte" button: raised brass that presses in. */
+.hub {
+  inset: 36%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--alama-decor);
+  box-shadow:
+    0 0 0 4px var(--lambriu),
+    0 0 0 6px var(--alama-decor),
+    0 8px 16px var(--shadow),
+    inset 0 3px 0 rgb(255 255 255 / 0.28),
+    inset 0 -5px 0 rgb(35 18 11 / 0.22);
+  transition: transform 120ms ease-out;
+}
+
+.wheel:active:not([aria-disabled='true']) .hub {
+  transform: scale(0.95);
+}
+
+.hub-label {
+  font-family: var(--font-marquee);
+  font-weight: 800;
+  font-size: clamp(1.35rem, 6.6vw, 1.9rem);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #1a2321;
+}
+
+.is-spinning .hub-label {
+  opacity: 0.45;
+}
+
+.pointer {
+  top: -3%;
+  left: 50%;
+  width: 10.5%;
+  transform: translateX(-50%);
+  overflow: visible;
+  filter: drop-shadow(0 3px 3px var(--shadow));
+}
+
+.ptr-body {
+  fill: var(--alama-decor);
+  stroke: var(--lambriu);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.ptr-shade {
+  fill: rgb(35 18 11 / 0.2);
+}
+
+.ptr-halo {
+  fill: var(--bec);
+  opacity: 0.35;
+}
+
+.ptr-bulb {
+  fill: var(--bec);
+  stroke: #23120b;
+  stroke-width: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lights,
+  .is-spinning .lights,
+  .is-lit .lights {
+    animation: none;
+    opacity: 0.9;
+  }
+
+  .rotor,
+  .hub {
+    transition: none;
+  }
+}

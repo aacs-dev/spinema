@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <title>Spinema – ce vedem diseară?</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Învârte roata genurilor, lasă bobina să aleagă filmul și află unde îl poți vedea în România sau Polonia.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#e2e1da" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c0b0e" media="(prefers-color-scheme: dark)">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <!--
+    Spinema Marquee: Big Shoulders Inline (OFL 1.1, fonts/OFL-big-shoulders.txt), pinned to weight 800
+    and subset to Romanian letters, digits and punctuation (23 kB). It sets the headline, which is the
+    largest paint, so it is preloaded here instead of waiting for the app to render. Rebuild with:
+      fonttools varLib.instancer big-shoulders-inline-<subset>-wght-normal.woff2 wght=800 -o tmp.ttf
+      pyftsubset tmp.ttf --unicodes=<unicode-range below> --flavor=woff2
+  -->
+  <link rel="preload" href="fonts/spinema-marquee-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/spinema-marquee-latin-ext.woff2" as="font" type="font/woff2" crossorigin>
+  <style>
+    @font-face {
+      font-family: 'Spinema Marquee';
+      font-weight: 800;
+      font-display: swap;
+      src: url('fonts/spinema-marquee-latin.woff2') format('woff2');
+      unicode-range: U+0020-007E, U+00A0, U+00B7, U+00C2, U+00CE, U+00E2, U+00EE, U+2013-2014, U+2018-2019, U+201C-201E, U+2026;
+    }
+    @font-face {
+      font-family: 'Spinema Marquee';
+      font-weight: 800;
+      font-display: swap;
+      src: url('fonts/spinema-marquee-latin-ext.woff2') format('woff2');
+      unicode-range: U+0102-0103, U+0218-021B;
+    }
+  </style>
+</head>
+<body>
+  <app-root></app-root>
+  <noscript>Spinema are nevoie de JavaScript ca să învârtă roata.</noscript>
+</body>
+</html>

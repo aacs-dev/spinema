@@ -1,0 +1,411 @@
+@import 'tailwindcss';
+
+/* Spinema Marquee (the inline display face) is declared and preloaded in index.html. */
+
+/* ── Design tokens (see DESIGN.md) ─────────────────────────────────────────── */
+
+:root {
+  color-scheme: light dark;
+
+  /* Terrazzo / Sala */
+  --sala: #e2e1da;
+  --perete: #edece6;
+  /* Catifea */
+  --catifea: #8a1b2a;
+  /* Alamă: text-safe and decorative variants */
+  --alama: #7a5612;
+  --alama-decor: #c59a3e;
+  /* Lambriu */
+  --lambriu: #4b2c1e;
+  /* Bilet */
+  --bilet: #d3e5cb;
+  /* Tuș / Ecran */
+  --text: #1a2321;
+  --muted: #4b514e;
+  /* Effect colour, identical in both themes */
+  --bec: #ffe3a1;
+
+  --primary: var(--catifea);
+  --on-primary: #f6f1e8;
+  --focus: var(--alama);
+  --line: rgb(26 35 33 / 0.2);
+  --backdrop: rgb(28 11 14 / 0.6);
+  --shadow: rgb(43 18 10 / 0.28);
+
+  /* Film grain: static fractal noise, dark specks on the light theme. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .34 0 0 0 -.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sala: #1c0b0e;
+    --perete: #2c1217;
+    --catifea: #9e2a38;
+    --alama: #d8b05a;
+    --alama-decor: #d8b05a;
+    --bilet: #bfd5b6;
+    --text: #f1ebe0;
+    --muted: #c8b8af;
+
+    --primary: var(--alama);
+    --on-primary: #1c0b0e;
+    --focus: var(--alama);
+    --line: rgb(241 235 224 / 0.18);
+    --backdrop: rgb(0 0 0 / 0.7);
+    --shadow: rgb(0 0 0 / 0.55);
+
+    /* Light specks on the dark theme. */
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .92 0 0 0 0 .8 .26 0 0 0 -.1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  }
+}
+
+@theme inline {
+  --color-sala: var(--sala);
+  --color-perete: var(--perete);
+  --color-catifea: var(--catifea);
+  --color-alama: var(--alama);
+  --color-lambriu: var(--lambriu);
+  --color-bilet: var(--bilet);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+
+  --font-marquee: 'Spinema Marquee', 'Big Shoulders Variable', 'Arial Narrow', sans-serif;
+  --font-display: 'Big Shoulders Variable', 'Arial Narrow', sans-serif-condensed, sans-serif;
+  --font-sans: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+  --font-mono: 'Atkinson Hyperlegible Mono Variable', ui-monospace, monospace;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+
+@layer base {
+  html {
+    background: var(--grain) var(--sala);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 100%;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  a {
+    color: inherit;
+  }
+}
+
+/* ── Shared controls ───────────────────────────────────────────────────────── */
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0.625rem 1.125rem;
+    border: 2px solid transparent;
+    border-radius: 3px;
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    border-color: currentColor;
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
+    cursor: default;
+  }
+
+  .icon-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .link-btn {
+    min-height: 44px;
+    padding: 0.5rem 0.25rem;
+    border: 0;
+    background: none;
+    font-size: 1rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  /* Dialogs: settings, library, about. Bottom sheet on phones, side panel on wide screens. */
+  .sheet {
+    width: 100%;
+    max-width: 100%;
+    max-height: 88dvh;
+    margin: auto 0 0;
+    padding: 0;
+    border: 0;
+    background: var(--perete);
+    color: var(--text);
+    overscroll-behavior: contain;
+  }
+
+  .sheet::backdrop,
+  .trailer::backdrop {
+    background: var(--backdrop);
+  }
+
+  .sheet-inner {
+    display: grid;
+    gap: 1.25rem;
+    padding: 0.75rem 1.25rem 1.5rem;
+  }
+
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-right: -0.5rem;
+  }
+
+  .sheet-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  @media (min-width: 40rem) {
+    .sheet {
+      width: 26rem;
+      max-height: 100dvh;
+      height: 100dvh;
+      margin: 0 0 0 auto;
+    }
+  }
+
+  .field {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .field-legend {
+    margin-bottom: 0.5rem;
+    padding: 0;
+    font-weight: 700;
+  }
+
+  .choices {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .choice,
+  .switch {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .choice input,
+  .switch input {
+    width: 1.375rem;
+    height: 1.375rem;
+    margin: 0;
+    /* Brass in the dark theme: velvet on dark velvet would fall under 3:1. */
+    accent-color: var(--primary);
+  }
+
+  .switch-label {
+    font-weight: 700;
+  }
+
+  .hint {
+    margin: 0.25rem 0 0;
+    color: var(--muted);
+  }
+
+  .confirm:empty {
+    display: none;
+  }
+
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 2px solid var(--line);
+  }
+
+  .tab {
+    min-height: 48px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    background: none;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .tab[aria-selected='true'] {
+    border-bottom-color: var(--alama);
+  }
+
+  .tab-count {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .panel:focus-visible {
+    outline-offset: 2px;
+  }
+
+  .movie-list {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .movie-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .movie-open {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 44px;
+    padding: 0.5rem 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .movie-open img,
+  .thumb-missing {
+    display: block;
+    flex: none;
+    width: 46px;
+    height: 69px;
+    background: var(--line);
+  }
+
+  .movie-text {
+    display: grid;
+  }
+
+  .movie-title {
+    font-weight: 700;
+  }
+
+  .movie-meta {
+    font-size: 0.9375rem;
+    color: var(--muted);
+  }
+
+  .remove-btn {
+    min-height: 44px;
+    padding-inline: 0.75rem;
+  }
+
+  .empty-note {
+    margin: 0.5rem 0;
+    color: var(--muted);
+  }
+
+  .about-wordmark {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 850;
+    font-size: 3.5rem;
+    line-height: 1;
+    color: var(--alama);
+  }
+
+  .about-credits {
+    display: grid;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .about-credits p {
+    margin: 0;
+  }
+
+  .tmdb-link {
+    display: inline-flex;
+    width: fit-content;
+    padding-block: 0.5rem;
+  }
+
+  .tmdb-link img {
+    display: block;
+    width: 120px;
+    height: auto;
+  }
+
+  .trailer {
+    width: min(100vw, 960px);
+    max-width: 100vw;
+    padding: 0;
+    border: 0;
+    background: #000;
+    color: #f1ebe0;
+  }
+
+  .trailer-inner {
+    display: grid;
+  }
+
+  .trailer-close {
+    justify-self: end;
+    --focus: #ffe3a1;
+  }
+
+  .trailer iframe {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 0;
+  }
+}
