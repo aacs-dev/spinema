@@ -385,8 +385,12 @@
   }
 
   .trailer {
-    width: min(100vw, 960px);
+    /* Tailwind's reset zeroes every margin, which also undoes the browser's centring of modal dialogs. */
+    margin: auto;
+    /* As wide as fits, but never taller than the screen: a 16:9 video plus the close button. */
+    width: min(100vw, 960px, (100dvh - 44px) * 16 / 9);
     max-width: 100vw;
+    max-height: 100dvh;
     padding: 0;
     border: 0;
     background: #000;

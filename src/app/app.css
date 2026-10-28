@@ -30,6 +30,13 @@
   color: var(--alama);
 }
 
+.wordmark-link {
+  display: inline-block;
+  border-radius: 3px;
+  color: inherit;
+  text-decoration: none;
+}
+
 @media (prefers-color-scheme: dark) {
   .wordmark {
     text-shadow: 0 0 14px rgb(255 227 161 / 0.35);

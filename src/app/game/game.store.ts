@@ -77,6 +77,8 @@ export class GameStore {
   /** Absolute wheel rotation in degrees and the transition length to reach it. */
   readonly rotation = signal(0);
   readonly spinDuration = signal(WHEEL_SPIN_MS);
+  /** Where the latest spin started. A wheel that appears mid-spin ("Alt gen" on a ticket) turns from here. */
+  readonly spinStart = signal(0);
 
   readonly reel = signal<ReelState | null>(null);
   readonly movie = signal<MovieDetails | null>(null);
@@ -146,6 +148,7 @@ export class GameStore {
     const plan = planSpin(this.rotation(), index, genres.length, this.rng);
     this.genreIndex.set(index);
     this.spinDuration.set(reduced ? 0 : WHEEL_SPIN_MS);
+    this.spinStart.set(this.rotation());
     this.rotation.set(plan.target);
     this.go('spinningGenre');
 

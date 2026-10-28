@@ -168,7 +168,12 @@ describe('GameStore', () => {
     await store.init();
     await store.spin();
     phases.length = 0;
-    await store.respinGenre();
+    const restedAt = store.rotation();
+    const spin = store.respinGenre();
+    // The wheel reappears mid-spin, so it needs to know where this turn starts.
+    expect(store.spinStart()).toBe(restedAt);
+    expect(store.rotation()).toBeGreaterThan(restedAt);
+    await spin;
     expect(phases[0]).toBe('spinningGenre');
     expect(phases.at(-1)).toBe('result');
     expect(night.tokens()).toBe(2);

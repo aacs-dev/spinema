@@ -41,8 +41,9 @@
   }
 
   <span
+    #rotor
     class="rotor"
-    [style.transform]="'rotate(' + rotation() + 'deg)'"
+    [style.transform]="'rotate(' + (enteringAt() ?? rotation()) + 'deg)'"
     [style.transition-duration.ms]="durationMs()"
   >
     <svg viewBox="-170 -170 340 340" aria-hidden="true" focusable="false">

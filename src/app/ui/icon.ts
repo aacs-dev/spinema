@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-export type IconName = 'play' | 'share' | 'bookmark' | 'bookmark-filled' | 'list' | 'settings' | 'close';
+export type IconName = 'play' | 'share' | 'bookmark' | 'bookmark-filled' | 'list' | 'settings' | 'close' | 'back';
 
 /** A handful of 24px line icons, inlined so there is no icon font or library. Always decorative. */
 @Component({
@@ -18,6 +18,7 @@ export type IconName = 'play' | 'share' | 'bookmark' | 'bookmark-filled' | 'list
         @case ('list') { <path d="M4 5.5h16v13H4zM4 9.5h16M9 5.5v13" /> }
         @case ('settings') { <path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2.25" /><circle cx="9" cy="17" r="2.25" /> }
         @case ('close') { <path d="M6 6l12 12M18 6 6 18" /> }
+        @case ('back') { <path d="M19.5 12h-15M10.5 6l-6 6 6 6" /> }
       }
     </svg>
   `,

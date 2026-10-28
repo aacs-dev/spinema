@@ -1,6 +1,8 @@
 <div class="shell">
   <header class="topbar">
-    <h1 class="wordmark">{{ t.appName }}</h1>
+    <h1 class="wordmark">
+      <a class="wordmark-link" href="./" (click)="goHome($event)">{{ t.appName }}</a>
+    </h1>
     <div class="topbar-actions">
       <app-token-counter [left]="night.tokens()" />
       <button type="button" class="icon-btn" [attr.aria-label]="t.header.openHistory" (click)="historyOpen.set(true)">
@@ -25,6 +27,7 @@
             class="start-wheel"
             [genres]="store.genres()"
             [rotation]="store.rotation()"
+            [spinStart]="store.spinStart()"
             [durationMs]="store.spinDuration()"
             [spinning]="store.spinning()"
             [litIndex]="litIndex()"

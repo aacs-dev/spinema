@@ -38,7 +38,9 @@ export class ShareService {
     const url = new URL(this.document.location.href);
     if (!url.searchParams.has(FILM_PARAM)) return;
     url.searchParams.delete(FILM_PARAM);
-    this.document.defaultView?.history.replaceState(null, '', url.toString());
+    const history = this.document.defaultView?.history;
+    // Keeps the entry's state, which marks an open ticket for the Back button.
+    history?.replaceState(history.state, '', url.toString());
   }
 
   async share(id: number, title: string, text: string): Promise<ShareOutcome> {

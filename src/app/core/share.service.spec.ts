@@ -1,4 +1,5 @@
-import { buildFilmLink, parseFilmParam } from './share.service';
+import { TestBed } from '@angular/core/testing';
+import { ShareService, buildFilmLink, parseFilmParam } from './share.service';
 
 describe('parseFilmParam', () => {
   it.each([
@@ -30,5 +31,15 @@ describe('buildFilmLink', () => {
   it('round-trips through the parser', () => {
     const link = buildFilmLink('https://user.github.io/spinema/', 680);
     expect(parseFilmParam(new URL(link).search)).toBe(680);
+  });
+});
+
+describe('ShareService.clearFilmParam', () => {
+  it('removes ?film= and keeps the history entry state', () => {
+    history.replaceState({ spinemaCard: true }, '', '/?film=550&x=1');
+    TestBed.inject(ShareService).clearFilmParam();
+    expect(location.search).toBe('?x=1');
+    expect(history.state).toEqual({ spinemaCard: true });
+    history.replaceState(null, '', '/');
   });
 });

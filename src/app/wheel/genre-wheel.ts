@@ -2,12 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  OnInit,
   afterNextRender,
   computed,
   effect,
   inject,
   input,
   output,
+  signal,
   untracked,
   viewChild,
 } from '@angular/core';
@@ -56,9 +58,11 @@ export function segmentColor(index: number, count: number): SegmentColor {
   styleUrl: './genre-wheel.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GenreWheel {
+export class GenreWheel implements OnInit {
   readonly genres = input.required<readonly Genre[]>();
   readonly rotation = input.required<number>();
+  /** Where the spin under way started. A wheel that appears mid-spin turns from here. */
+  readonly spinStart = input<number | null>(null);
   readonly durationMs = input.required<number>();
   readonly spinning = input(false);
   /** Segment to light up once the wheel has landed. */
@@ -73,7 +77,15 @@ export class GenreWheel {
   private readonly sound = inject(SoundService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly button = viewChild.required<ElementRef<HTMLButtonElement>>('button');
-  private restingAt = 0;
+  private readonly rotor = viewChild.required<ElementRef<HTMLElement>>('rotor');
+  /** Angle the rotor last came to rest at, for the tick sounds; null until the first render. */
+  private restingAt: number | null = null;
+
+  /**
+   * Set while a wheel that appeared mid-spin paints its first frame at `spinStart`. Without that
+   * frame the rotor would be created already at the target and the CSS transition would not run.
+   */
+  protected readonly enteringAt = signal<number | null>(null);
 
   protected readonly bulbs = Array.from({ length: BULB_COUNT }, (_, i) => {
     const angle = (i / BULB_COUNT) * 2 * Math.PI;
@@ -127,6 +139,11 @@ export class GenreWheel {
   constructor() {
     afterNextRender(() => {
       if (this.focusOnInit()) this.button().nativeElement.focus();
+      if (this.enteringAt() !== null) {
+        // Reading the style makes the browser commit the start angle before it moves to the target.
+        void getComputedStyle(this.rotor().nativeElement).transform;
+        this.enteringAt.set(null);
+      }
     });
 
     // Optional tick sound: one click per segment border passing the pointer.
@@ -134,8 +151,10 @@ export class GenreWheel {
       const target = this.rotation();
       const duration = this.durationMs();
       untracked(() => {
-        if (target !== this.restingAt && duration > 0) {
-          this.sound.ticks(tickTimes(this.restingAt, target, this.segments().length, duration));
+        // A wheel that appears at rest stays silent; one that appears mid-spin ticks from where it started.
+        const from = this.restingAt ?? (this.spinning() ? (this.spinStart() ?? target) : target);
+        if (target !== from && duration > 0) {
+          this.sound.ticks(tickTimes(from, target, this.segments().length, duration));
         }
         this.restingAt = target;
       });
@@ -150,9 +169,15 @@ export class GenreWheel {
     });
   }
 
+  ngOnInit(): void {
+    const start = this.spinStart();
+    if (this.spinning() && this.durationMs() > 0 && start !== null && start !== this.rotation()) {
+      this.enteringAt.set(start);
+    }
+  }
+
   protected activate(): void {
     if (this.disabled() || this.spinning()) return;
-    this.sound.prime();
     this.spin.emit();
   }
 

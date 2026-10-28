@@ -7,7 +7,7 @@ export class SoundService {
   private readonly settings = inject(SettingsService);
   private context: AudioContext | null = null;
 
-  /** Call from a click handler: browsers only start audio in response to a user gesture. */
+  /** Call from a tap or key handler: browsers only start or resume audio in response to a user gesture. */
   prime(): void {
     this.audio();
   }
@@ -46,7 +46,9 @@ export class SoundService {
   private audio(): AudioContext | null {
     if (!this.settings.sound() || typeof AudioContext === 'undefined') return null;
     this.context ??= new AudioContext();
-    if (this.context.state === 'suspended') void this.context.resume();
+    // Not only 'suspended': Safari reports 'interrupted' after a call, a trailer or a locked screen.
+    // Outside a user gesture the resume is refused; the next tap primes it again.
+    if (this.context.state !== 'running') this.context.resume().catch(() => undefined);
     return this.context;
   }
 

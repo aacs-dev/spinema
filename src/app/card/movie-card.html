@@ -1,4 +1,12 @@
 @let m = movie();
+<!-- Whatever opened the ticket, there is always a way back to the wheel. -->
+<div class="card-nav">
+  <button type="button" class="link-btn back-btn" (click)="back.emit()">
+    <app-icon name="back" />
+    {{ t.card.backToWheel }}
+  </button>
+</div>
+
 <article class="ticket" aria-labelledby="ticket-title">
   <div class="ticket-body">
     <div class="ticket-head">
@@ -173,8 +181,6 @@
           } @else {
             <button type="button" class="btn btn-secondary btn-spent" disabled>{{ t.card.noTokens }}</button>
           }
-        } @else {
-          <button type="button" class="btn btn-secondary" (click)="back.emit()">{{ t.card.backToWheel }}</button>
         }
       }
 

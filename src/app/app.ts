@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { MovieCard } from './card/movie-card';
 import { LibraryService } from './core/library.service';
@@ -5,6 +6,7 @@ import { NightService } from './core/night.service';
 import { SettingsService } from './core/settings.service';
 import { SoundService } from './core/sound.service';
 import { Settings } from './core/storage.service';
+import { BackNavigation } from './game/back-navigation';
 import { GameStore } from './game/game.store';
 import { STRINGS } from './i18n/strings';
 import { PosterReel } from './reel/poster-reel';
@@ -34,7 +36,13 @@ import { GenreWheel } from './wheel/genre-wheel';
     AboutDialog,
     TrailerModal,
   ],
-  host: { '(document:visibilitychange)': 'onVisibilityChange()' },
+  host: {
+    '(document:visibilitychange)': 'onVisibilityChange()',
+    // Safari resumes audio only inside a user gesture, and some sounds come later, after a fetch
+    // ("Alt film") or after a trailer interrupted the audio. Every tap or key re-arms it.
+    '(document:click)': 'sound.prime()',
+    '(document:keydown)': 'sound.prime()',
+  },
 })
 export class App {
   protected readonly store = inject(GameStore);
@@ -42,7 +50,8 @@ export class App {
   protected readonly library = inject(LibraryService);
   protected readonly settings = inject(SettingsService);
   protected readonly t = inject(STRINGS);
-  private readonly sound = inject(SoundService);
+  protected readonly sound = inject(SoundService);
+  private readonly window = inject(DOCUMENT).defaultView;
 
   protected readonly settingsOpen = signal(false);
   protected readonly historyOpen = signal(false);
@@ -70,10 +79,19 @@ export class App {
   );
 
   constructor() {
+    inject(BackNavigation);
     void this.store.init();
     effect(() => {
       if (this.store.view() !== 'wheel') this.focusWheel.set(true);
     });
+  }
+
+  /** The wordmark returns to the start screen without a reload; modified clicks still open a new tab. */
+  protected goHome(event: MouseEvent): void {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    this.store.backToWheel();
+    this.window?.scrollTo(0, 0);
   }
 
   protected onVisibilityChange(): void {
