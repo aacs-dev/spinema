@@ -16,6 +16,12 @@ export const DELAY = new InjectionToken<Delay>('DELAY', {
   factory: () => (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
 });
 
+/** The device's IANA time zone, e.g. "Europe/Bucharest". Picks the streaming country until the user does. */
+export const TIME_ZONE = new InjectionToken<string>('TIME_ZONE', {
+  providedIn: 'root',
+  factory: () => Intl.DateTimeFormat().resolvedOptions().timeZone ?? '',
+});
+
 /** Whether the user asked the OS for reduced motion. Read at the moment of each spin. */
 export const REDUCED_MOTION = new InjectionToken<() => boolean>('REDUCED_MOTION', {
   providedIn: 'root',

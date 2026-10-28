@@ -1,0 +1,19 @@
+{
+  "name": "Spinema",
+  "short_name": "Spinema",
+  "description": "Învârte roata genurilor, lasă bobina să aleagă filmul și află unde îl poți vedea.",
+  "lang": "ro",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1c0b0e",
+  "theme_color": "#1c0b0e",
+  "categories": ["entertainment"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

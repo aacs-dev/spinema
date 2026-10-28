@@ -1,19 +1,49 @@
 import { Injectable } from '@angular/core';
-import { MaxRuntime, MovieRef, RUNTIME_OPTIONS, Region, REGIONS } from './tmdb.models';
+import { LANGUAGES, Language } from '../i18n/language';
+import { MAX_PLATFORMS } from './platforms';
+import {
+  DECADE_OPTIONS,
+  Decade,
+  MaxRuntime,
+  MinRating,
+  MovieRef,
+  RATING_OPTIONS,
+  RUNTIME_OPTIONS,
+  Region,
+  isRegionCode,
+} from './tmdb.models';
 
 export const SCHEMA_VERSION = 1;
 const PREFIX = 'spinema:';
 
 export interface Settings {
+  /** Interface language; null follows the browser. */
+  language: Language | null;
   maxRuntime: MaxRuntime;
-  region: Region;
+  decade: Decade;
+  minRating: MinRating;
+  /** Streaming country; null follows the device's time zone. */
+  region: Region | null;
   sound: boolean;
+  /** The user's streaming platforms (TMDB provider ids) per region. Empty: any platform. */
+  platforms: Record<Region, readonly number[]>;
 }
 
-export const DEFAULT_SETTINGS: Settings = { maxRuntime: null, region: 'RO', sound: false };
+export const DEFAULT_SETTINGS: Settings = {
+  language: null,
+  maxRuntime: null,
+  decade: null,
+  minRating: null,
+  region: null,
+  sound: false,
+  platforms: {},
+};
+
+/** Countries with saved platforms; a generous cap, since each one is a few numbers. */
+const MAX_PLATFORM_COUNTRIES = 30;
 
 export interface HistoryEntry extends MovieRef {
-  /** When "Îl vedem!" was pressed, in ms. */
+  /** When "Îl vedem!" (or, in the already-seen list, "Am văzut deja") was pressed, in ms. */
   at: number;
 }
 
@@ -22,12 +52,16 @@ export interface Night {
   startedAt: number;
   /** Movies already shown as results tonight; excluded from new picks. */
   seenIds: number[];
+  /** Genres the group took off the wheel tonight, in the order they were vetoed. */
+  vetoedGenreIds: number[];
 }
 
 export interface StoredData {
   settings: Settings;
   history: HistoryEntry[];
   watchlist: MovieRef[];
+  /** "Am văzut deja": movies that never come up in a pick again. */
+  alreadySeen: HistoryEntry[];
   night: Night;
 }
 
@@ -43,30 +77,51 @@ function parseMovieRef(raw: unknown): MovieRef | null {
   return { id: raw['id'], title: raw['title'], year: raw['year'], posterPath: raw['posterPath'] };
 }
 
+/** Settings saved before the platform filter existed have no `platforms`: they get none selected. */
+function parsePlatforms(raw: unknown): Settings['platforms'] {
+  const platforms: Record<Region, number[]> = {};
+  if (!isRecord(raw)) return platforms;
+  for (const [region, ids] of Object.entries(raw).slice(0, MAX_PLATFORM_COUNTRIES)) {
+    if (isRegionCode(region) && Array.isArray(ids)) platforms[region] = [...new Set(ids.filter(isId))].slice(0, MAX_PLATFORMS);
+  }
+  return platforms;
+}
+
 /** Keeps the valid items of a list instead of throwing everything away for one bad entry. */
 function parseList<T>(item: Parser<T>): Parser<T[]> {
   return (raw) => (Array.isArray(raw) ? raw.map(item).filter((x): x is T => x !== null) : null);
 }
 
+const parseHistoryEntry: Parser<HistoryEntry> = (raw) => {
+  const ref = parseMovieRef(raw);
+  return ref && isRecord(raw) && typeof raw['at'] === 'number' ? { ...ref, at: raw['at'] } : null;
+};
+
 const parsers: { [K in keyof StoredData]: Parser<StoredData[K]> } = {
   settings: (raw) => {
     if (!isRecord(raw)) return null;
-    const maxRuntime = RUNTIME_OPTIONS.includes(raw['maxRuntime'] as MaxRuntime)
-      ? (raw['maxRuntime'] as MaxRuntime)
-      : DEFAULT_SETTINGS.maxRuntime;
-    const region = REGIONS.includes(raw['region'] as Region) ? (raw['region'] as Region) : DEFAULT_SETTINGS.region;
-    const sound = typeof raw['sound'] === 'boolean' ? raw['sound'] : DEFAULT_SETTINGS.sound;
-    return { maxRuntime, region, sound };
+    // Fields missing from settings saved by an older version fall back to their defaults.
+    const option = <T>(options: readonly T[], value: unknown, fallback: T): T =>
+      options.includes(value as T) ? (value as T) : fallback;
+    return {
+      language: option<Language | null>(LANGUAGES, raw['language'], DEFAULT_SETTINGS.language),
+      maxRuntime: option(RUNTIME_OPTIONS, raw['maxRuntime'], DEFAULT_SETTINGS.maxRuntime),
+      decade: option(DECADE_OPTIONS, raw['decade'], DEFAULT_SETTINGS.decade),
+      minRating: option(RATING_OPTIONS, raw['minRating'], DEFAULT_SETTINGS.minRating),
+      region: isRegionCode(raw['region']) ? raw['region'] : DEFAULT_SETTINGS.region,
+      sound: typeof raw['sound'] === 'boolean' ? raw['sound'] : DEFAULT_SETTINGS.sound,
+      platforms: parsePlatforms(raw['platforms']),
+    };
   },
-  history: parseList((raw) => {
-    const ref = parseMovieRef(raw);
-    return ref && isRecord(raw) && typeof raw['at'] === 'number' ? { ...ref, at: raw['at'] } : null;
-  }),
+  history: parseList(parseHistoryEntry),
   watchlist: parseList(parseMovieRef),
+  alreadySeen: parseList(parseHistoryEntry),
   night: (raw) => {
     if (!isRecord(raw) || typeof raw['tokens'] !== 'number' || typeof raw['startedAt'] !== 'number') return null;
     const seenIds = Array.isArray(raw['seenIds']) ? raw['seenIds'].filter(isId) : [];
-    return { tokens: Math.max(0, Math.floor(raw['tokens'])), startedAt: raw['startedAt'], seenIds };
+    // Nights saved before the group veto existed have none.
+    const vetoedGenreIds = Array.isArray(raw['vetoedGenreIds']) ? [...new Set(raw['vetoedGenreIds'].filter(isId))] : [];
+    return { tokens: Math.max(0, Math.floor(raw['tokens'])), startedAt: raw['startedAt'], seenIds, vetoedGenreIds };
   },
 };
 

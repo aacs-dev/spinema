@@ -11,9 +11,14 @@
   <meta name="theme-color" content="#1c0b0e" media="(prefers-color-scheme: dark)">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <!-- Installable: Android reads the manifest; iOS uses the touch icon and the title below. -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Spinema">
+  <meta name="mobile-web-app-capable" content="yes">
   <!--
     Spinema Marquee: Big Shoulders Inline (OFL 1.1, fonts/OFL-big-shoulders.txt), pinned to weight 800
-    and subset to Romanian letters, digits and punctuation (23 kB). It sets the headline, which is the
+    and subset to Romanian, Hungarian and English letters, digits and punctuation (24 kB). It sets the headline, which is the
     largest paint, so it is preloaded here instead of waiting for the app to render. Rebuild with:
       fonttools varLib.instancer big-shoulders-inline-<subset>-wght-normal.woff2 wght=800 -o tmp.ttf
       pyftsubset tmp.ttf --unicodes=<unicode-range below> --flavor=woff2
@@ -26,14 +31,14 @@
       font-weight: 800;
       font-display: swap;
       src: url('fonts/spinema-marquee-latin.woff2') format('woff2');
-      unicode-range: U+0020-007E, U+00A0, U+00B7, U+00C2, U+00CE, U+00E2, U+00EE, U+2013-2014, U+2018-2019, U+201C-201E, U+2026;
+      unicode-range: U+0020-007E, U+00A0, U+00B7, U+00C1-00C2, U+00C9, U+00CD-00CE, U+00D3, U+00D6, U+00DA, U+00DC, U+00E1-00E2, U+00E9, U+00ED-00EE, U+00F3, U+00F6, U+00FA, U+00FC, U+2013-2014, U+2018-2019, U+201C-201E, U+2026;
     }
     @font-face {
       font-family: 'Spinema Marquee';
       font-weight: 800;
       font-display: swap;
       src: url('fonts/spinema-marquee-latin-ext.woff2') format('woff2');
-      unicode-range: U+0102-0103, U+0218-021B;
+      unicode-range: U+0102-0103, U+0150-0151, U+0170-0171, U+0218-021B;
     }
   </style>
 </head>

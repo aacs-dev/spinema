@@ -14,6 +14,19 @@
     </div>
   </header>
 
+  <!-- Offline and new-version notices. Always in the page, so screen readers announce what appears. -->
+  <div class="status-area" aria-live="polite">
+    @if (!status.online()) {
+      <p class="status-bar">{{ t.pwa.offline }}</p>
+    }
+    @if (status.updateReady()) {
+      <p class="status-bar">
+        <span>{{ t.pwa.updateReady }}</span>
+        <button type="button" class="link-btn status-action" (click)="status.applyUpdate()">{{ t.pwa.reload }}</button>
+      </p>
+    }
+  </div>
+
   <main class="stage">
     @switch (store.view()) {
       @case ('wheel') {
@@ -25,13 +38,13 @@
 
           <app-genre-wheel
             class="start-wheel"
-            [genres]="store.genres()"
+            [genres]="store.wheelGenres()"
             [rotation]="store.rotation()"
             [spinStart]="store.spinStart()"
             [durationMs]="store.spinDuration()"
             [spinning]="store.spinning()"
             [litIndex]="litIndex()"
-            [disabled]="!store.genresReady() || outOfTokens()"
+            [disabled]="!store.genresReady() || outOfTokens() || veto.inProgress()"
             [focusOnInit]="focusWheel()"
             describedBy="wheel-hint"
             (spin)="store.spin()"
@@ -48,11 +61,34 @@
             }
           </div>
 
+          <!--
+            Loaded once the genres are in, which happens after the first paint anyway. A `when` trigger,
+            not `on idle`: coming back from a ticket, the panel must reappear at once.
+          -->
+          @defer (when veto.available()) {
+            @if (veto.available()) {
+              <app-veto-panel
+                class="start-veto"
+                [genres]="store.wheelGenres()"
+                [vetoed]="veto.vetoed()"
+                [people]="veto.people()"
+                [turn]="veto.turn()"
+                [maxPeople]="veto.maxPeople()"
+                [locked]="store.phase() !== 'idle'"
+                (start)="veto.start($event)"
+                (pick)="veto.pick($event)"
+                (cancel)="veto.cancel()"
+                (clear)="veto.clear()"
+              />
+            }
+          }
+
           <!-- Lobby letterboard: tonight's filters, and the way into settings. -->
           <button type="button" class="letterboard" (click)="openFilters()">
-            <span class="lb-title">{{ t.schedule.title }}</span>
+            <span class="lb-title">{{ t.schedule.title }} · {{ t.country(settings.region()) }}</span>
             <span class="lb-row">{{ runtimeLine() }}</span>
-            <span class="lb-row">{{ t.schedule.region(settings.region()) }}</span>
+            <span class="lb-row">{{ periodLine() }}</span>
+            <span class="lb-row">{{ platformLine() }}</span>
             <span class="lb-change">{{ t.schedule.change }}</span>
           </button>
         </section>
@@ -74,8 +110,10 @@
             [movie]="movie"
             [origin]="store.origin()"
             [region]="settings.region()"
+            [myPlatforms]="settings.platformIds()"
             [tokens]="night.tokens()"
             [saved]="library.savedIds().has(movie.id)"
+            [alreadySeen]="library.alreadySeenIds().has(movie.id)"
             [accepted]="store.accepted()"
             [notice]="store.notice()"
             [nightStartedAt]="night.night().startedAt"
@@ -83,6 +121,7 @@
             (respinMovie)="store.respinMovie()"
             (respinGenre)="store.respinGenre()"
             (toggleSaved)="store.toggleSaved()"
+            (toggleAlreadySeen)="store.toggleAlreadySeen()"
             (share)="store.shareMovie()"
             (trailer)="trailerOpen.set(true)"
             (spinYourself)="store.backToWheel()"
@@ -115,7 +154,7 @@
           <p>{{ t.empty.body }}</p>
           <div class="message-actions">
             <button type="button" class="btn btn-primary" (click)="store.spin()">{{ t.empty.otherGenre }}</button>
-            <button type="button" class="btn btn-secondary" (click)="openFilters()">{{ t.empty.openSettings }}</button>
+            <button type="button" class="btn btn-secondary" (click)="openFilters()">{{ t.empty.openFilters }}</button>
           </div>
         </section>
       }
@@ -133,6 +172,9 @@
   <app-settings-panel
     [open]="settingsOpen()"
     [settings]="settings.settings()"
+    [region]="settings.region()"
+    [regionIsAuto]="settings.regionIsAuto()"
+    [detectedRegion]="settings.detectedRegion"
     (change)="updateSettings($event)"
     (newNight)="store.newNight()"
     (about)="openAbout()"
@@ -145,8 +187,10 @@
     [open]="historyOpen()"
     [history]="library.history()"
     [watchlist]="library.watchlist()"
+    [alreadySeen]="library.alreadySeen()"
     (openMovie)="openFromLibrary($event)"
     (remove)="library.removeSaved($event)"
+    (removeAlreadySeen)="library.removeAlreadySeen($event)"
     (closed)="historyOpen.set(false)"
   />
 }

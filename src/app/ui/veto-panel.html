@@ -1,0 +1,49 @@
+<div class="veto" [class.is-active]="mode() === 'count' || mode() === 'picking'">
+  @switch (mode()) {
+    @case ('closed') {
+      <button #openButton type="button" class="btn btn-secondary veto-open" [disabled]="locked()" (click)="openCount()">
+        {{ t.veto.open }}
+      </button>
+      <p class="veto-note">{{ t.veto.intro }}</p>
+    }
+
+    @case ('count') {
+      <fieldset class="veto-count">
+        <legend class="veto-title">{{ t.veto.howMany }}</legend>
+        <div class="count-options">
+          @for (n of counts(); track n) {
+            <label class="count-option">
+              <input type="radio" name="veto-people" [checked]="count() === n" (change)="count.set(n)" />
+              <span>{{ n }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+      <div class="veto-actions">
+        <button type="button" class="btn btn-primary" (click)="begin()">{{ t.veto.start }}</button>
+        <button type="button" class="link-btn" (click)="closeCount()">{{ t.veto.cancel }}</button>
+      </div>
+    }
+
+    @case ('picking') {
+      <!-- Announced after each pick; the prompt below then takes focus for the next person. -->
+      <p class="veto-note veto-removed" role="status">{{ lastRemoved() ? t.veto.removed(lastRemoved()!) : '' }}</p>
+      <h3 #prompt class="veto-title" tabindex="-1">{{ t.veto.turn(turn() + 1, people()!) }}</h3>
+      <ul class="veto-genres">
+        @for (genre of genres(); track genre.id) {
+          <li>
+            <button type="button" class="veto-genre" (click)="choose(genre.id)">
+              <span class="sr-only">{{ t.veto.removeLabel }} </span>{{ genre.name }}
+            </button>
+          </li>
+        }
+      </ul>
+      <button type="button" class="link-btn veto-stop" (click)="stop()">{{ t.veto.cancel }}</button>
+    }
+
+    @case ('done') {
+      <p #summary class="veto-summary" tabindex="-1">{{ t.veto.done(vetoedList()) }}</p>
+      <button type="button" class="link-btn" [disabled]="locked()" (click)="undo()">{{ t.veto.clear }}</button>
+    }
+  }
+</div>

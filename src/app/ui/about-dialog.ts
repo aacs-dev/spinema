@@ -33,7 +33,9 @@ export const TMDB_LOGO_URL =
             <img [src]="logo" [alt]="t.about.tmdbLogoAlt" width="120" height="16" />
           </a>
           <p lang="en">{{ t.about.tmdbNotice }}</p>
-          <p class="hint">{{ t.about.tmdbNoticeLocal }}</p>
+          @if (t.about.tmdbNoticeLocal) {
+            <p class="hint">{{ t.about.tmdbNoticeLocal }}</p>
+          }
           <p class="hint">
             <a href="https://www.justwatch.com" target="_blank" rel="noopener noreferrer">{{ t.about.justWatch }}</a>
           </p>

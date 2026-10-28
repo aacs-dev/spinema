@@ -68,10 +68,16 @@ export class GameStore {
 
   readonly genres = signal<Genre[]>([]);
   readonly genresReady = signal(false);
+  /** The genres on the wheel: all of them, minus tonight's group veto. */
+  readonly wheelGenres = computed(() => {
+    const vetoed = new Set(this.night.vetoedGenreIds());
+    return this.genres().filter((g) => !vetoed.has(g.id));
+  });
+  /** Index into `wheelGenres`, which only changes on the start screen, never mid-spin. */
   readonly genreIndex = signal<number | null>(null);
   readonly genre = computed(() => {
     const index = this.genreIndex();
-    return index === null ? null : (this.genres()[index] ?? null);
+    return index === null ? null : (this.wheelGenres()[index] ?? null);
   });
 
   /** Absolute wheel rotation in degrees and the transition length to reach it. */
@@ -133,9 +139,11 @@ export class GameStore {
     const from = this.phaseState();
     if (from !== 'idle' && from !== 'result' && from !== 'empty' && from !== 'error') return;
     if (!this.genresReady() && !(await this.loadGenres())) return;
-    const genres = this.genres();
+    const genres = this.wheelGenres();
     if (genres.length === 0) return;
 
+    // A night that ended while the page stayed open starts over first, so its free first spin applies.
+    this.night.refresh();
     // Re-trying after an empty pool or an error does not cost another token.
     const cost = from === 'empty' || from === 'error' ? 0 : this.night.spinCost();
     if (!this.night.trySpend(cost)) return;
@@ -240,6 +248,14 @@ export class GameStore {
     this.showNotice(saved ? this.t.announce.saved : this.t.announce.unsaved);
   }
 
+  /** "Am văzut deja": the movie stays on screen but never comes up again. Costs and gives nothing. */
+  toggleAlreadySeen(): void {
+    const movie = this.movie();
+    if (!movie) return;
+    const seen = this.library.toggleAlreadySeen(movie);
+    this.showNotice(seen ? this.t.announce.alreadySeen : this.t.announce.notAlreadySeen);
+  }
+
   async shareMovie(): Promise<void> {
     const movie = this.movie();
     if (!movie) return;
@@ -317,7 +333,7 @@ export class GameStore {
 
   private startPick(genreId: number): Promise<PickOutcome> {
     const night = this.night.night();
-    const exclude = new Set([...night.seenIds, ...this.library.watchedSince(night.startedAt)]);
+    const exclude = new Set([...night.seenIds, ...this.library.excludedIds()]);
     return this.picker.pick(genreId, this.settings.filters(), exclude).then(
       async (result): Promise<PickOutcome> => {
         if (result.kind === 'empty') return { ok: true, result };

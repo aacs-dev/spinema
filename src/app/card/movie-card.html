@@ -60,14 +60,14 @@
 
     <div class="overview">
       @if (m.overview) {
-        @if (m.overviewLanguage === 'en') {
+        @if (m.overviewLanguage !== t.lang) {
           <p class="overview-note">{{ t.card.overviewEnglish }}</p>
         }
         <p
           id="overview-text"
           class="overview-text"
           [class.is-clamped]="longOverview() && !overviewOpen()"
-          [attr.lang]="m.overviewLanguage === 'en' ? 'en' : null"
+          [attr.lang]="m.overviewLanguage !== t.lang ? m.overviewLanguage : null"
         >{{ m.overview }}</p>
         @if (longOverview()) {
           <button
@@ -99,11 +99,16 @@
           <p class="provider-kind">{{ t.card.providerKinds[group.kind] }}</p>
           <ul class="logos" [attr.aria-label]="t.card.providerKinds[group.kind]">
             @for (provider of group.providers; track provider.provider_id) {
-              <li>
+              <!-- Only where having the platform means watching it: not to rent or buy there. -->
+              @let isMine = (group.kind === 'flatrate' || group.kind === 'free') && mine().has(provider.provider_id);
+              <li [class.is-mine]="isMine">
                 @if (logoUrl(provider); as logo) {
                   <img [src]="logo" [alt]="provider.provider_name" [title]="provider.provider_name" width="44" height="44" loading="lazy" />
                 } @else {
                   <span class="logo-text">{{ provider.provider_name }}</span>
+                }
+                @if (isMine) {
+                  <span class="sr-only">, {{ t.card.yourPlatform }}</span>
                 }
               </li>
             }
@@ -192,6 +197,15 @@
         <button type="button" class="btn btn-secondary" (click)="share.emit()">
           <app-icon name="share" />
           {{ t.card.share }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary seen-btn"
+          [attr.aria-pressed]="alreadySeen()"
+          (click)="toggleAlreadySeen.emit()"
+        >
+          <app-icon [name]="alreadySeen() ? 'check' : 'eye'" />
+          {{ alreadySeen() ? t.card.alreadySeenOn : t.card.alreadySeen }}
         </button>
       </div>
 

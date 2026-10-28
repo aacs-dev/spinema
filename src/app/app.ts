@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { MovieCard } from './card/movie-card';
+import { AppStatus } from './core/app-status.service';
 import { LibraryService } from './core/library.service';
 import { NightService } from './core/night.service';
 import { SettingsService } from './core/settings.service';
@@ -8,6 +9,7 @@ import { SoundService } from './core/sound.service';
 import { Settings } from './core/storage.service';
 import { BackNavigation } from './game/back-navigation';
 import { GameStore } from './game/game.store';
+import { GroupVeto } from './game/group-veto';
 import { STRINGS } from './i18n/strings';
 import { PosterReel } from './reel/poster-reel';
 import { AboutDialog } from './ui/about-dialog';
@@ -17,6 +19,7 @@ import { Icon } from './ui/icon';
 import { SettingsPanel } from './ui/settings-panel';
 import { TokenCounter } from './ui/token-counter';
 import { TrailerModal } from './ui/trailer-modal';
+import { VetoPanel } from './ui/veto-panel';
 import { GenreWheel } from './wheel/genre-wheel';
 
 @Component({
@@ -35,6 +38,7 @@ import { GenreWheel } from './wheel/genre-wheel';
     HistoryDrawer,
     AboutDialog,
     TrailerModal,
+    VetoPanel,
   ],
   host: {
     '(document:visibilitychange)': 'onVisibilityChange()',
@@ -51,6 +55,8 @@ export class App {
   protected readonly settings = inject(SettingsService);
   protected readonly t = inject(STRINGS);
   protected readonly sound = inject(SoundService);
+  protected readonly veto = inject(GroupVeto);
+  protected readonly status = inject(AppStatus);
   private readonly window = inject(DOCUMENT).defaultView;
 
   protected readonly settingsOpen = signal(false);
@@ -64,6 +70,7 @@ export class App {
 
   protected readonly wheelHint = computed(() => {
     if (!this.store.genresReady()) return this.t.wheel.loading;
+    if (this.veto.inProgress()) return this.t.veto.wheelWaiting;
     if (this.store.spinning()) return this.t.wheel.spinning;
     if (this.outOfTokens()) return this.t.wheel.noTokens;
     return this.night.spinCost() > 0 ? this.t.wheel.costHint : this.t.wheel.hint;
@@ -74,11 +81,29 @@ export class App {
     return maxRuntime === null ? this.t.runtime.any : this.t.runtime.option(maxRuntime);
   });
 
+  /** Decade and minimum rating share one row, listing only what is set: "Anii ’90 · Nota 7+". */
+  protected readonly periodLine = computed(() => {
+    const { decade, minRating } = this.settings.settings();
+    const parts = [
+      decade === null ? null : this.t.years.decade(decade),
+      minRating === null ? null : this.t.rating.short(minRating),
+    ].filter((part) => part !== null);
+    return parts.length > 0 ? parts.join(' · ') : this.t.schedule.anyPeriod;
+  });
+
+  protected readonly platformLine = computed(() => {
+    const count = this.settings.platformIds().length;
+    return count > 0 ? this.t.schedule.myPlatforms(count) : this.t.schedule.allPlatforms;
+  });
+
   protected readonly litIndex = computed(() =>
     this.store.phase() === 'genreChosen' ? this.store.genreIndex() : null,
   );
 
   constructor() {
+    const document = inject(DOCUMENT);
+    document.documentElement.lang = this.t.lang;
+    document.title = this.t.meta.title;
     inject(BackNavigation);
     void this.store.init();
     effect(() => {
@@ -101,6 +126,9 @@ export class App {
   protected updateSettings(patch: Partial<Settings>): void {
     this.settings.update(patch);
     if (patch.sound) this.sound.prime();
+    // Every text is read once at start-up, so a new language takes a reload. Nothing is lost:
+    // settings, tokens and lists are all in localStorage.
+    if (patch.language !== undefined && patch.language !== this.t.lang) this.window?.location.reload();
   }
 
   protected openTonightsMovie(): void {

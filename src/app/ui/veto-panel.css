@@ -1,0 +1,142 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 22rem;
+}
+
+.veto {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+/* While the group decides, the panel becomes a framed card, like the error and empty messages. */
+.veto.is-active {
+  justify-items: stretch;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-top: 4px solid var(--catifea);
+  background: var(--perete);
+  text-align: left;
+}
+
+.veto-open {
+  width: 100%;
+}
+
+.veto-note {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+/* Keeps its line even when empty, so the prompt does not jump between turns. */
+.veto-removed {
+  min-height: 1.4em;
+}
+
+.veto-title {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.375rem;
+  line-height: 1.15;
+}
+
+.veto-title:focus,
+.veto-summary:focus {
+  outline: none;
+}
+
+.veto-count {
+  display: grid;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.count-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Number tiles; the real radio sits on top, invisible, so it keeps native keyboard behaviour. */
+.count-option {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 48px;
+  min-height: 48px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.count-option input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.count-option:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.count-option:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.veto-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.veto-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.veto-genre {
+  min-height: 44px;
+  padding: 0.5rem 0.875rem;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.veto-genre:hover {
+  border-color: var(--alama);
+  color: var(--alama);
+}
+
+.veto-stop {
+  justify-self: start;
+}
+
+.veto-summary {
+  margin: 0;
+  font-weight: 700;
+}

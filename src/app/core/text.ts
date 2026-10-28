@@ -11,23 +11,40 @@ export function yearOf(date: string | undefined | null): string | null {
   return match ? match[1] : null;
 }
 
-const ratingFormat = new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+// Builders for the dictionaries' `format` entries.
 
-/** 7.25 → "7,3" (Romanian decimal comma, one decimal). */
-export function formatRating(rating: number): string {
-  return ratingFormat.format(rating);
+/** One decimal in the locale's notation: 7.25 → "7,3" in Romanian, "7.3" in English. */
+export function ratingFormatter(locale: string): (rating: number) => string {
+  const format = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return (rating) => format.format(rating);
 }
 
-/** 132 → "2 h 12 min", 45 → "45 min". */
-export function formatRuntime(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m} min`;
-  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+/** Hours and minutes with the given units: 132 → "2 h 12 min", 45 → "45 min", 120 → "2 h". */
+export function runtimeFormatter(hour: string, minute: string, glue = ' '): (minutes: number) => string {
+  return (minutes) => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h === 0) return `${m}${glue}${minute}`;
+    return m === 0 ? `${h}${glue}${hour}` : `${h}${glue}${hour} ${m}${glue}${minute}`;
+  };
 }
 
-const dateFormat = new Intl.DateTimeFormat('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+/** Country names from the browser, in the locale's language: "RO" → "România", "Románia", "Romania". */
+export function countryNamer(locale: string): (code: string) => string {
+  let names: Intl.DisplayNames | null = null;
+  return (code) => {
+    try {
+      names ??= new Intl.DisplayNames([locale], { type: 'region' });
+      return names.of(code) ?? code;
+    } catch {
+      // A code the browser does not know: show it as it is rather than break the page.
+      return code;
+    }
+  };
+}
 
-export function formatDate(ms: number): string {
-  return dateFormat.format(ms);
+/** Day, month and year as numbers, in the locale's order: "28.10.2026", "28/10/2026", "2026. 10. 28.". */
+export function dateFormatter(locale: string): (ms: number) => string {
+  const format = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return (ms) => format.format(ms);
 }

@@ -10,7 +10,6 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { formatDate, formatRating, formatRuntime } from '../core/text';
 import { TmdbService } from '../core/tmdb.service';
 import { MovieDetails, Provider, Region } from '../core/tmdb.models';
 import { NOW } from '../core/tokens';
@@ -58,8 +57,11 @@ export class MovieCard {
   readonly movie = input.required<MovieDetails>();
   readonly origin = input.required<CardOrigin>();
   readonly region = input.required<Region>();
+  /** Platforms the user ticked in settings for this region; their logos are marked. */
+  readonly myPlatforms = input<readonly number[]>([]);
   readonly tokens = input.required<number>();
   readonly saved = input(false);
+  readonly alreadySeen = input(false);
   readonly accepted = input(false);
   readonly notice = input('');
   readonly nightStartedAt = input.required<number>();
@@ -68,6 +70,7 @@ export class MovieCard {
   readonly respinMovie = output<void>();
   readonly respinGenre = output<void>();
   readonly toggleSaved = output<void>();
+  readonly toggleAlreadySeen = output<void>();
   readonly share = output<void>();
   readonly trailer = output<void>();
   readonly spinYourself = output<void>();
@@ -96,15 +99,16 @@ export class MovieCard {
 
   protected readonly rating = computed(() => {
     const rating = this.movie().rating;
-    return rating === null ? null : formatRating(rating);
+    return rating === null ? null : this.t.format.rating(rating);
   });
 
   protected readonly runtime = computed(() => {
     const runtime = this.movie().runtime;
-    return runtime === null ? null : formatRuntime(runtime);
+    return runtime === null ? null : this.t.format.runtime(runtime);
   });
 
   protected readonly providerGroups = computed(() => groupProviders(this.movie(), this.region()));
+  protected readonly mine = computed(() => new Set(this.myPlatforms()));
   protected readonly providerLink = computed(() => this.movie().providers[this.region()]?.link ?? null);
 
   /** A seat derived from the TMDB id, so the same film always gets the same ticket. */
@@ -114,7 +118,7 @@ export class MovieCard {
   });
 
   protected readonly dateLabel = computed(() =>
-    formatDate(this.origin() === 'spin' ? this.nightStartedAt() : this.now()),
+    this.t.format.date(this.origin() === 'spin' ? this.nightStartedAt() : this.now()),
   );
 
   constructor() {

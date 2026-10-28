@@ -49,6 +49,7 @@ interface Setup {
   genres?: () => Promise<Genre[]>;
   sharedId?: number | null;
   reducedMotion?: boolean;
+  now?: () => number;
 }
 
 function setup(options: Setup = {}) {
@@ -72,7 +73,7 @@ function setup(options: Setup = {}) {
       { provide: PickerService, useValue: { pick: (genreId: number, _f: unknown, exclude: ReadonlySet<number>) => pick(genreId, exclude) } },
       { provide: ShareService, useValue: share },
       { provide: RNG, useValue: mulberry32(2026) },
-      { provide: NOW, useValue: () => Date.UTC(2026, 9, 26, 19) },
+      { provide: NOW, useValue: options.now ?? (() => Date.UTC(2026, 9, 26, 19)) },
       { provide: DELAY, useValue: () => Promise.resolve() },
       { provide: IMAGE_PRELOADER, useValue: async () => undefined },
       { provide: REDUCED_MOTION, useValue: () => options.reducedMotion ?? false },
@@ -140,6 +141,23 @@ describe('GameStore', () => {
     }
   });
 
+  it('never lands on a vetoed genre, and the wheel shows only the others', async () => {
+    const { store, night } = setup();
+    await store.init();
+    night.setVetoes([28, 27]);
+    expect(store.wheelGenres().map((g) => g.id)).toEqual([35, 18, 10770]);
+    for (let i = 0; i < 12; i++) {
+      const spin = store.spin();
+      const index = store.genreIndex()!;
+      expect(segmentAtPointer(store.rotation(), store.wheelGenres().length)).toBe(index);
+      expect([28, 27]).not.toContain(store.genre()!.id);
+      await spin;
+      night.reset();
+      night.setVetoes([28, 27]);
+      store.backToWheel();
+    }
+  });
+
   it('spins the reel for the chosen genre and the card shows the reel winner', async () => {
     const { store, pick } = setup();
     await store.init();
@@ -179,6 +197,20 @@ describe('GameStore', () => {
     expect(night.tokens()).toBe(2);
   });
 
+  it('after 06:00 the first spin is free again, even if the page stayed open overnight', async () => {
+    let now = new Date(2026, 9, 26, 21).getTime();
+    const { store, night } = setup({ now: () => now });
+    await store.init();
+    await store.spin();
+    expect(night.spinCost()).toBe(1);
+
+    now = new Date(2026, 9, 27, 6, 5).getTime();
+    store.backToWheel();
+    await store.spin();
+    expect(night.tokens()).toBe(3);
+    expect(night.night().seenIds).toEqual([101]);
+  });
+
   it('refuses to re-spin at 0 tokens and keeps the movie', async () => {
     const { store, night } = setup();
     await store.init();
@@ -200,6 +232,38 @@ describe('GameStore', () => {
     await store.spin();
     await store.respinMovie();
     expect([...pick.mock.calls[1][1]]).toEqual([100]);
+  });
+
+  it('"Am văzut deja" keeps the ticket, costs nothing and leaves the movie out of every later pick', async () => {
+    const { store, pick, night } = setup();
+    await store.init();
+    await store.spin();
+    store.toggleAlreadySeen();
+    expect(store.phase()).toBe('result');
+    expect(store.movie()?.id).toBe(100);
+    expect(store.notice()).toBe('Notat ca văzut. Nu mai iese la tragere.');
+    expect(night.tokens()).toBe(3);
+
+    // A new night forgets tonight's results, not what was already seen.
+    night.reset();
+    store.backToWheel();
+    await store.spin();
+    expect(pick.mock.calls.at(-1)![1].has(100)).toBe(true);
+
+    store.toggleAlreadySeen();
+    store.toggleAlreadySeen();
+    expect(store.notice()).toBe('Scos din Deja văzute. Poate ieși din nou la tragere.');
+  });
+
+  it('a movie chosen with "Îl vedem!" never comes up again, even on later nights', async () => {
+    const { store, pick, night } = setup();
+    await store.init();
+    await store.spin();
+    store.accept();
+    night.reset();
+    store.backToWheel();
+    await store.spin();
+    expect(pick.mock.calls.at(-1)![1].has(100)).toBe(true);
   });
 
   it('ends in the empty state when no movie fits, and spinning again from there is free', async () => {

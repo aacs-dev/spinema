@@ -20,13 +20,32 @@ const ORIGINAL = ['The Long Night', 'Summer of Glass', 'Last Light', 'Winter Roa
 
 const PROVIDERS = [
   { provider_id: 8, provider_name: 'Netflix', color: '#b20710' },
-  { provider_id: 1899, provider_name: 'Max', color: '#002be7' },
+  { provider_id: 1899, provider_name: 'HBO Max', color: '#002be7' },
   { provider_id: 337, provider_name: 'Disney Plus', color: '#0b2a6b' },
   { provider_id: 119, provider_name: 'Amazon Prime Video', color: '#00a8e1' },
   { provider_id: 2, provider_name: 'Apple TV', color: '#333333' },
   { provider_id: 3, provider_name: 'Google Play Movies', color: '#0f9d58' },
   { provider_id: 1773, provider_name: 'SkyShowtime', color: '#2f1a6b' },
 ];
+
+// Listed in settings but never carrying a movie here, like TMDB's many niche services.
+const NICHE_PLATFORMS = [
+  { provider_id: 11, provider_name: 'MUBI', color: '#001489' },
+  { provider_id: 283, provider_name: 'Crunchyroll', color: '#f47521' },
+  { provider_id: 475, provider_name: 'DOCSVILLE', color: '#444444' },
+  { provider_id: 701, provider_name: 'FILMBOX+ Stream', color: '#6a1b9a' },
+];
+
+function platformList() {
+  return {
+    results: [...NICHE_PLATFORMS, ...PROVIDERS].map((p, i) => ({
+      provider_id: p.provider_id,
+      provider_name: p.provider_name,
+      logo_path: `/mock/logo-${p.provider_id}.svg`,
+      display_priority: i,
+    })),
+  };
+}
 
 const rand = (seed) => {
   let a = seed >>> 0;
@@ -63,13 +82,33 @@ function discover(params) {
   // "Film TV" has nothing with 300+ votes, and the documentary pool vanishes under 90 minutes.
   const empty = genreId === 10770 || (genreId === 99 && maxRuntime === '90');
   if (empty) return { page, results: [], total_pages: 0, total_results: 0 };
+  // "Platformele mele": a movie qualifies when one of the platforms carries it by subscription.
+  const platforms = params.get('with_watch_providers')?.split('|').map(Number) ?? [];
+  const region = params.get('watch_region') ?? 'RO';
+  const onMyPlatforms = (movie) =>
+    platforms.length === 0 || (providersFor(movie.id)[region]?.flatrate ?? []).some((p) => platforms.includes(p.provider_id));
+  // Decade and minimum rating, as TMDB applies them.
+  const from = params.get('primary_release_date.gte') ?? '0000';
+  const to = params.get('primary_release_date.lte') ?? '9999';
+  const minRating = Number(params.get('vote_average.gte') ?? 0);
+  const inPeriod = (movie) => movie.release_date >= from && movie.release_date <= to;
   const results = [];
   for (let slot = 0; slot < 20; slot++) {
     const movie = movieFor(genreId, page, slot);
-    if (!maxRuntime || movie.runtime <= Number(maxRuntime)) results.push(movie);
+    if (
+      (!maxRuntime || movie.runtime <= Number(maxRuntime)) &&
+      onMyPlatforms(movie) &&
+      inPeriod(movie) &&
+      movie.vote_average >= minRating
+    ) {
+      results.push(movie);
+    }
   }
   return { page, results, total_pages: 37, total_results: 37 * 20 };
 }
+
+/** Countries the mock has streaming data for, in the shape of /3/watch/providers/regions. */
+const MOCK_REGIONS = ['RO', 'PL', 'MD', 'HU', 'IT', 'ES', 'DE', 'GB', 'US', 'FR', 'AT'];
 
 function providersFor(id) {
   const r = rand(id + 7);
@@ -83,7 +122,10 @@ function providersFor(id) {
     id % 6 === 0
       ? undefined
       : { link: `https://www.themoviedb.org/movie/${id}/watch?locale=${code}`, flatrate: pick(1 + (id % 3)), rent: pick(2), buy: pick(2) };
-  return { RO: region('RO'), PL: id % 4 === 0 ? undefined : region('PL') };
+  // Romania and Poland as before; the other mock countries carry fewer movies.
+  const results = { RO: region('RO'), PL: id % 4 === 0 ? undefined : region('PL') };
+  for (const [i, code] of MOCK_REGIONS.slice(2).entries()) if ((id + i) % 3 !== 0) results[code] = region(code);
+  return results;
 }
 
 function details(id, params) {
@@ -127,7 +169,7 @@ function poster(id) {
 }
 
 function logo(providerId) {
-  const p = PROVIDERS.find((x) => x.provider_id === providerId) ?? { provider_name: '?', color: '#555' };
+  const p = [...PROVIDERS, ...NICHE_PLATFORMS].find((x) => x.provider_id === providerId) ?? { provider_name: '?', color: '#555' };
   return `<svg xmlns="http://www.w3.org/2000/svg" width="92" height="92" viewBox="0 0 92 92">
   <rect width="92" height="92" fill="${p.color}"/>
   <text x="46" y="60" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-weight="700" font-size="40">${p.provider_name[0]}</text>
@@ -157,6 +199,10 @@ createServer((req, res) => {
     if (req.method !== 'GET') return json(res, 405, { error: 'method_not_allowed' });
     if (path === '/3/genre/movie/list') return json(res, 200, { genres: GENRES });
     if (path === '/3/discover/movie') return json(res, 200, discover(url.searchParams));
+    if (path === '/3/watch/providers/movie') return json(res, 200, platformList());
+    if (path === '/3/watch/providers/regions') {
+      return json(res, 200, { results: MOCK_REGIONS.map((code) => ({ iso_3166_1: code, english_name: code, native_name: code })) });
+    }
     if ((match = /^\/3\/movie\/(\d+)$/.exec(path))) {
       const id = Number(match[1]);
       if (id < 1000) return json(res, 404, { error: 'tmdb_error', status: 404, message: 'The resource you requested could not be found.' });

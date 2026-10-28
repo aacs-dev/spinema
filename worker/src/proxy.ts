@@ -6,7 +6,7 @@ const HOUR = 60 * 60;
 
 export const DEFAULT_ALLOWED_ORIGINS = ['https://aacs-dev.github.io', 'http://localhost:4200'];
 
-export type RouteKind = 'genres' | 'discover' | 'movie' | 'providers';
+export type RouteKind = 'genres' | 'discover' | 'movie' | 'providers' | 'regions';
 
 export interface Route {
   kind: RouteKind;
@@ -20,6 +20,8 @@ export function matchRoute(pathname: string): Route | null {
   if (pathname === '/3/discover/movie') return { kind: 'discover', ttl: HOUR };
   if (/^\/3\/movie\/\d{1,10}$/.test(pathname)) return { kind: 'movie', ttl: 6 * HOUR };
   if (pathname === '/3/watch/providers/movie') return { kind: 'providers', ttl: 24 * HOUR };
+  // The countries TMDB has streaming data for, for the "Unde te uiți" picker.
+  if (pathname === '/3/watch/providers/regions') return { kind: 'regions', ttl: 24 * HOUR };
   return null;
 }
 

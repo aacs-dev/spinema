@@ -1,0 +1,42 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "resources": {
+        "files": ["/favicon.svg", "/index.html", "/manifest.webmanifest", "/*.css", "/*.js", "/fonts/spinema-marquee-*.woff2"]
+      }
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": ["/icons/**", "/media/**", "/**/*.(svg|png|woff2)"]
+      }
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "tmdb-api",
+      "urls": ["https://spinema-proxy.cinequest-app.workers.dev/**"],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "timeout": "6s",
+        "maxSize": 300,
+        "maxAge": "7d"
+      }
+    },
+    {
+      "name": "tmdb-images",
+      "urls": ["https://image.tmdb.org/t/p/**"],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 150,
+        "maxAge": "30d"
+      }
+    }
+  ]
+}

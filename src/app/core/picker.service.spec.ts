@@ -5,7 +5,7 @@ import { DiscoverPage, Filters, MovieSummary } from './tmdb.models';
 import { TmdbService } from './tmdb.service';
 import { RNG } from './tokens';
 
-const ANY: Filters = { maxRuntime: null };
+const ANY: Filters = { maxRuntime: null, platforms: null, decade: null, minRating: null };
 
 function movie(id: number, poster = true): MovieSummary {
   return { id, title: `Film ${id}`, original_title: `Film ${id}`, poster_path: poster ? `/p${id}.jpg` : null };
@@ -112,13 +112,13 @@ describe('PickerService', () => {
 
   it('reports empty straight away when the genre has no results', async () => {
     const { picker, requested } = setup(() => ({ page: 1, results: [], total_pages: 0, total_results: 0 }));
-    expect((await picker.pick(10770, { maxRuntime: 90 }, new Set())).kind).toBe('empty');
+    expect((await picker.pick(10770, { maxRuntime: 90, platforms: null, decade: null, minRating: null }, new Set())).kind).toBe('empty');
     expect(requested).toEqual([1]);
   });
 
   it('passes genre and filters through to TMDB', async () => {
     const { picker, tmdb } = setup((n) => page(n, 1));
-    await picker.pick(27, { maxRuntime: 120 }, new Set());
-    expect(tmdb.discover).toHaveBeenCalledWith(27, { maxRuntime: 120 }, 1);
+    await picker.pick(27, { maxRuntime: 120, platforms: null, decade: null, minRating: null }, new Set());
+    expect(tmdb.discover).toHaveBeenCalledWith(27, { maxRuntime: 120, platforms: null, decade: null, minRating: null }, 1);
   });
 });

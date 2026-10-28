@@ -296,6 +296,30 @@
   font-size: 0.875rem;
 }
 
+/* A platform the user has: a punched check mark, like a ticket inspector's. */
+.logos .is-mine {
+  position: relative;
+}
+
+.logos .is-mine::after {
+  content: '✓';
+  content: '✓' / '';
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .no-providers {
   margin: 0;
 }
@@ -438,6 +462,11 @@
 .secondary-actions {
   display: grid;
   gap: 0.625rem;
+}
+
+/* Its own row under "Salvează" and "Trimite", whatever the columns. */
+.seen-btn {
+  grid-column: 1 / -1;
 }
 
 @media (min-width: 30rem) {

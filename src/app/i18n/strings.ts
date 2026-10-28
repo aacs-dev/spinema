@@ -1,16 +1,36 @@
 import { InjectionToken } from '@angular/core';
+import { StorageService } from '../core/storage.service';
 import type { Region } from '../core/tmdb.models';
+import { Language, resolveLanguage } from './language';
+import { ro } from './ro';
 
 /**
- * Every user-facing string lives here. To add English or Polish, write another object that
- * satisfies `Dictionary` and provide it through `STRINGS`.
- * Romanian text uses comma-below ș/ț (U+0219/U+021B), never the cedilla forms; a test enforces it.
+ * Every user-facing string, per language: Romanian (`ro.ts`), English (`en.ts`), Hungarian (`hu.ts`).
+ * TypeScript makes sure each dictionary has every entry. Tests enforce the orthography: comma-below
+ * ș/ț in Romanian, never the cedilla forms; ő/ű in Hungarian, never õ/û or ô.
  */
 export interface Dictionary {
+  /** BCP 47 code: `<html lang>`, and the language TMDB texts are compared against. */
+  lang: Language;
+  /** Asked of TMDB for titles, overviews and genre names. */
+  tmdbLanguage: string;
   appName: string;
   locale: string;
-  regionNames: Record<Region, string>;
-  regionIn: Record<Region, string>;
+  /** A country's name in this language, from its ISO code: "RO" → "România". */
+  country: (code: Region) => string;
+
+  meta: {
+    /** The browser tab and the name under the home-screen icon. */
+    title: string;
+  };
+
+  format: {
+    /** 7.25 → "7,3" or "7.3": one decimal, in the language's notation. */
+    rating: (rating: number) => string;
+    /** 132 → "2 h 12 min". */
+    runtime: (minutes: number) => string;
+    date: (ms: number) => string;
+  };
 
   header: {
     openHistory: string;
@@ -25,7 +45,12 @@ export interface Dictionary {
 
   schedule: {
     title: string;
-    region: (region: Region) => string;
+    /** The platform row when none is ticked: the country is in the title. */
+    allPlatforms: string;
+    /** The period row when neither a decade nor a minimum rating is set. */
+    anyPeriod: string;
+    /** Shown instead of the region line once the user has picked their platforms. */
+    myPlatforms: (count: number) => string;
     change: string;
   };
 
@@ -41,9 +66,39 @@ export interface Dictionary {
     seeTonightsMovie: string;
   };
 
+  veto: {
+    open: string;
+    intro: string;
+    howMany: string;
+    start: string;
+    cancel: string;
+    turn: (person: number, people: number) => string;
+    /** Before a genre's name on its button: "Scoate Horror". */
+    removeLabel: string;
+    removed: (genre: string) => string;
+    /** `genres` is already a formatted list: "Horror, Western și Dramă". */
+    done: (genres: string) => string;
+    clear: string;
+    wheelWaiting: string;
+  };
+
   runtime: {
     any: string;
     option: (minutes: number) => string;
+  };
+
+  years: {
+    any: string;
+    /** `start` is the decade's first year: 1990 → "Anii ’90". */
+    decade: (start: number) => string;
+  };
+
+  rating: {
+    any: string;
+    /** In settings: "Cel puțin 7". */
+    option: (min: number) => string;
+    /** On the letterboard: "Nota 7+". */
+    short: (min: number) => string;
   };
 
   reel: {
@@ -78,6 +133,8 @@ export interface Dictionary {
     whereToWatch: (region: Region) => string;
     providerKinds: { flatrate: string; free: string; rent: string; buy: string };
     noProviders: (region: Region) => string;
+    /** Screen-reader note on a logo the user has ticked in settings. */
+    yourPlatform: string;
     justWatch: string;
     allOptions: string;
     accept: string;
@@ -89,6 +146,8 @@ export interface Dictionary {
     noTokens: string;
     save: string;
     saved: string;
+    alreadySeen: string;
+    alreadySeenOn: string;
     share: string;
     sharedIntro: string;
     spinYourself: string;
@@ -103,6 +162,8 @@ export interface Dictionary {
     shareFailed: string;
     saved: string;
     unsaved: string;
+    alreadySeen: string;
+    notAlreadySeen: string;
     accepted: string;
     newNight: string;
   };
@@ -110,7 +171,28 @@ export interface Dictionary {
   settings: {
     title: string;
     runtime: string;
+    years: string;
+    rating: string;
+    ratingHint: string;
     region: string;
+    /** Under the country choice, while it follows the time zone. */
+    regionAuto: string;
+    /** The same, when the time zone names no country on the list. */
+    regionFallback: string;
+    regionManual: string;
+    /** The picker's first option, which follows the time zone; `country` is the one it points to. */
+    regionAutoOption: (country: string) => string;
+    regionSuggested: string;
+    regionAll: string;
+    platforms: string;
+    platformsHint: (region: Region) => string;
+    platformsLoading: string;
+    platformsError: string;
+    morePlatforms: (count: number) => string;
+    clearPlatforms: string;
+    language: string;
+    /** Changing the language reloads the page. */
+    languageHint: string;
     sound: string;
     soundHint: string;
     newNight: string;
@@ -118,21 +200,33 @@ export interface Dictionary {
     about: string;
   };
 
+  pwa: {
+    offline: string;
+    updateReady: string;
+    reload: string;
+  };
+
   library: {
     title: string;
     history: string;
     watchlist: string;
+    alreadySeen: string;
     historyEmpty: string;
     watchlistEmpty: string;
+    alreadySeenEmpty: string;
     chosenOn: (date: string) => string;
+    markedOn: (date: string) => string;
     remove: (title: string) => string;
+    removeAlreadySeen: (title: string) => string;
     removeShort: string;
   };
 
   about: {
     title: string;
     body: string;
+    /** TMDB's required notice, always in English. */
     tmdbNotice: string;
+    /** The same notice translated; empty in English, where it would repeat. */
     tmdbNoticeLocal: string;
     justWatch: string;
     nonCommercial: string;
@@ -155,165 +249,29 @@ export interface Dictionary {
     title: string;
     body: string;
     otherGenre: string;
-    openSettings: string;
+    openFilters: string;
   };
 
   close: string;
 }
 
-export const ro: Dictionary = {
-  appName: 'Spinema',
-  locale: 'ro-RO',
-  regionNames: { RO: 'România', PL: 'Polonia' },
-  regionIn: { RO: 'în România', PL: 'în Polonia' },
+/**
+ * Loads a dictionary. Romanian, the default, is in the main bundle; English and Hungarian are
+ * fetched only by whoever uses them, before the app starts (see `main.ts`).
+ */
+export async function loadDictionary(language: Language): Promise<Dictionary> {
+  if (language === 'en') return (await import('./en')).en;
+  if (language === 'hu') return (await import('./hu')).hu;
+  return ro;
+}
 
-  header: {
-    openHistory: 'Istoric și filme salvate',
-    openSettings: 'Setări',
-    tokens: (left, total) => `Jetoane: ${left} din ${total}`,
-  },
+/** The language picked in settings, else the browser's. Read once, before the app starts. */
+export function startupLanguage(browserLanguages: readonly string[]): Language {
+  return resolveLanguage(new StorageService().read('settings')?.language ?? null, browserLanguages);
+}
 
-  hero: {
-    title: 'Ce vedem diseară?',
-    subtitle: 'Roata alege genul. Bobina alege filmul.',
-  },
-
-  schedule: {
-    title: 'Programul serii',
-    region: (region) => `Platforme din ${ro.regionNames[region]}`,
-    change: 'Schimbă',
-  },
-
-  wheel: {
-    spin: 'Învârte',
-    labelSuffix: 'roata genurilor',
-    hint: 'Apasă „Învârte” și lasă roata să aleagă.',
-    loading: 'Se încarcă genurile…',
-    spinning: 'Se învârte…',
-    costHint: 'O tură nouă costă un jeton.',
-    noTokens: 'Fără jetoane. Rămâne filmul ăsta.',
-    seeTonightsMovie: 'Vezi filmul serii',
-  },
-
-  runtime: {
-    any: 'Orice durată',
-    option: (m) => `Până la ${m} min`,
-  },
-
-  reel: {
-    loading: 'Se încarcă bobina…',
-    rolling: 'Se derulează bobina…',
-    genreOfTheNight: 'Genul serii',
-  },
-
-  card: {
-    loading: 'Se încarcă biletul…',
-    cinema: 'Cinematograf Spinema',
-    hall: 'Sala 1',
-    series: 'Seria SP',
-    number: (id) => `Nr. ${String(id).padStart(7, '0')}`,
-    rowLabel: 'Rândul',
-    seatLabel: 'Locul',
-    dateLabel: 'Data',
-    validTonight: 'Valabil numai în seara emiterii.',
-    stamp: 'Controlat',
-    originalTitle: 'Titlu original',
-    ratingLabel: 'Nota TMDB',
-    runtimeLabel: 'Durata',
-    yearLabel: 'Anul',
-    unknown: '–',
-    genresLabel: 'Genuri',
-    overviewEnglish: 'Rezumat în engleză',
-    noOverview: 'Filmul nu are încă un rezumat.',
-    readMore: 'Citește tot',
-    readLess: 'Mai puțin',
-    trailer: 'Vezi trailerul',
-    posterAlt: (title) => `Afișul filmului ${title}`,
-    whereToWatch: (region) => `Unde îl vezi ${ro.regionIn[region]}`,
-    providerKinds: { flatrate: 'Abonament', free: 'Gratuit', rent: 'Închiriere', buy: 'Cumpărare' },
-    noProviders: (region) => `Nu apare pe nicio platformă de streaming ${ro.regionIn[region]}.`,
-    justWatch: 'Date de disponibilitate: JustWatch',
-    allOptions: 'Toate opțiunile pe TMDB',
-    accept: 'Îl vedem!',
-    accepted: 'Vizionare plăcută!',
-    respin: 'Altă tură',
-    respinCost: '1 jeton',
-    respinMovie: 'Alt film, același gen',
-    respinGenre: 'Alt gen',
-    noTokens: 'Fără jetoane. Rămâne filmul ăsta.',
-    save: 'Salvează pentru altă dată',
-    saved: 'Salvat pentru altă dată',
-    share: 'Trimite',
-    sharedIntro: 'Cineva ți-a trimis biletul ăsta.',
-    spinYourself: 'Învârte și tu',
-    backToWheel: 'Înapoi la roată',
-  },
-
-  announce: {
-    genre: (name) => `Genul serii: ${name}.`,
-    movie: (title, year) => `Filmul serii: ${title}${year ? `, ${year}` : ''}.`,
-    tokenSpent: (left) =>
-      left === 0 ? 'Ai folosit ultimul jeton.' : `Ai folosit un jeton. Mai ai ${left === 1 ? 'unul' : left}.`,
-    linkCopied: 'Link copiat. Trimite-l cui vrei.',
-    shareFailed: 'Nu am putut copia linkul. Copiază-l din bara de adrese.',
-    saved: 'Salvat pentru altă dată.',
-    unsaved: 'Scos din lista De văzut.',
-    accepted: 'Notat în istoric. Vizionare plăcută!',
-    newNight: 'Seară nouă. Ai din nou 3 jetoane.',
-  },
-
-  settings: {
-    title: 'Setări',
-    runtime: 'Durata maximă',
-    region: 'Unde te uiți',
-    sound: 'Sunete',
-    soundHint: 'Clicuri scurte când se învârte roata.',
-    newNight: 'Seară nouă',
-    newNightHint: 'Primești din nou 3 jetoane, iar filmele de diseară pot ieși din nou.',
-    about: 'Despre Spinema',
-  },
-
-  library: {
-    title: 'Filmele tale',
-    history: 'Istoric',
-    watchlist: 'De văzut',
-    historyEmpty: 'Încă n-ai ales niciun film. Apasă „Îl vedem!” pe un bilet ca să apară aici.',
-    watchlistEmpty: 'Nimic salvat. Apasă „Salvează pentru altă dată” pe un bilet.',
-    chosenOn: (date) => `Ales pe ${date}`,
-    remove: (title) => `Scoate ${title} din lista De văzut`,
-    removeShort: 'Scoate',
-  },
-
-  about: {
-    title: 'Despre Spinema',
-    body: 'Spinema transformă întrebarea „ce vedem diseară?” într-un joc scurt: roata alege genul, bobina alege filmul, iar biletul îți spune unde îl găsești.',
-    tmdbNotice: 'This product uses the TMDB API but is not endorsed or certified by TMDB.',
-    tmdbNoticeLocal: 'Produsul folosește API-ul TMDB, dar nu este aprobat sau certificat de TMDB.',
-    justWatch: 'Datele despre platformele de streaming vin de la JustWatch, prin TMDB.',
-    nonCommercial: 'Spinema este necomercial: fără reclame și fără scripturi de urmărire.',
-    tmdbLogoAlt: 'The Movie Database (TMDB)',
-  },
-
-  trailer: {
-    title: (movie) => `Trailer: ${movie}`,
-  },
-
-  errors: {
-    genres: 'Nu am putut încărca genurile. Verifică conexiunea și încearcă din nou.',
-    movies: 'Nu am putut încărca filmele. Verifică conexiunea și încearcă din nou.',
-    details: 'Nu am putut încărca biletul. Verifică conexiunea și încearcă din nou.',
-    notFound: 'Filmul din link nu mai există pe TMDB. Învârte roata pentru altul.',
-    retry: 'Încearcă din nou',
-  },
-
-  empty: {
-    title: 'Bobina e goală',
-    body: 'Niciun film nu se potrivește cu filtrele tale. Alege o durată mai lungă sau învârte pentru alt gen.',
-    otherGenre: 'Alt gen',
-    openSettings: 'Schimbă durata',
-  },
-
-  close: 'Închide',
-};
-
+/**
+ * The interface texts, fixed for the page's lifetime: `main.ts` provides the dictionary of the
+ * start-up language, and changing the language in settings reloads the page.
+ */
 export const STRINGS = new InjectionToken<Dictionary>('STRINGS', { providedIn: 'root', factory: () => ro });
