@@ -130,6 +130,18 @@ describe('TmdbService', () => {
     await twenties;
   });
 
+  it('searches movies by title in the interface language, once per query', async () => {
+    const first = tmdb.search('  Casa ');
+    const sameQuery = tmdb.search('casa');
+    const req = http.expectOne((r) => r.url === `${BASE}/3/search/movie`);
+    expect(req.request.params.get('query')).toBe('Casa');
+    expect(req.request.params.get('language')).toBe('ro-RO');
+    expect(req.request.params.get('include_adult')).toBe('false');
+    req.flush({ page: 1, results: [{ id: 7, title: 'Casa din Ţară', original_title: 'House', poster_path: null }], total_pages: 1, total_results: 1 });
+    expect((await first).map((m) => m.title)).toEqual(['Casa din Țară']);
+    expect(await sameQuery).toBe(await first);
+  });
+
   it('lists the countries TMDB has streaming data for, once, keeping only valid codes', async () => {
     const first = tmdb.regions();
     const again = tmdb.regions();

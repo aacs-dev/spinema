@@ -5,6 +5,9 @@
     </h1>
     <div class="topbar-actions">
       <app-token-counter [left]="night.tokens()" />
+      <button type="button" class="icon-btn" [attr.aria-label]="t.header.openSearch" (click)="searchOpen.set(true)">
+        <app-icon name="search" />
+      </button>
       <button type="button" class="icon-btn" [attr.aria-label]="t.header.openHistory" (click)="historyOpen.set(true)">
         <app-icon name="list" />
       </button>
@@ -24,6 +27,14 @@
         <span>{{ t.pwa.updateReady }}</span>
         <button type="button" class="link-btn status-action" (click)="status.applyUpdate()">{{ t.pwa.reload }}</button>
       </p>
+    }
+    <!-- Offered once a first ticket has been seen, never on arrival; it can be closed for good. -->
+    @defer (when showInstallOffer()) {
+      @if (showInstallOffer()) {
+        <p class="status-bar install-bar">
+          <app-install-offer [mode]="install.mode()" [dismissible]="true" (install)="installApp()" (dismiss)="dismissInstall()" />
+        </p>
+      }
     }
   </div>
 
@@ -105,6 +116,12 @@
       }
 
       @case ('card') {
+        <!--
+          The ticket is the largest component and is only needed after the first spin, so it stays
+          out of the first load. App fetches its chunk shortly after start-up, so it is ready long
+          before a spin ends; a shared link that opens a ticket at once waits for it a moment.
+        -->
+        @defer (on immediate) {
         @if (store.movie(); as movie) {
           <app-movie-card
             [movie]="movie"
@@ -127,6 +144,9 @@
             (spinYourself)="store.backToWheel()"
             (back)="store.backToWheel()"
           />
+        }
+        } @loading (minimum 0ms) {
+          <p class="loading-note">{{ t.card.loading }}</p>
         }
       }
 
@@ -193,6 +213,10 @@
     (removeAlreadySeen)="library.removeAlreadySeen($event)"
     (closed)="historyOpen.set(false)"
   />
+}
+
+@defer (when searchOpen(); prefetch on idle) {
+  <app-search-dialog [open]="searchOpen()" (pick)="openFromSearch($event)" (closed)="searchOpen.set(false)" />
 }
 
 @defer (when aboutOpen(); prefetch on idle) {

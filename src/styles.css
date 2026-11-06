@@ -245,6 +245,63 @@
     cursor: pointer;
   }
 
+  /* "Pune Spinema pe ecranul telefonului": the strip under the header and the settings section. */
+  app-install-offer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+  }
+
+  .install-text {
+    flex: 1 1 16rem;
+  }
+
+  .install-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .btn-compact {
+    min-height: 40px;
+    padding: 0.375rem 0.875rem;
+  }
+
+  /* The share icon inside the iPhone steps, sized to the text. */
+  .inline-icon {
+    vertical-align: -0.2em;
+  }
+
+  .inline-icon svg {
+    width: 1.15em;
+    height: 1.15em;
+  }
+
+  /* The film search field: as tall and as framed as the select above. */
+  .search-input {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid currentColor;
+    border-radius: 3px;
+    background-color: var(--perete);
+    color: var(--text);
+    font: inherit;
+  }
+
+  .search-form {
+    display: grid;
+    gap: 0.375rem;
+  }
+
+  .search-status {
+    margin: 0;
+  }
+
   /* Short labels ("Anii ’90", "Cel puțin 7") fit two to a row, which keeps the panel short. */
   .choices-grid {
     grid-template-columns: 1fr 1fr;

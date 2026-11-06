@@ -10,6 +10,7 @@ import {
   GenreListResponse,
   MovieDetails,
   MovieDetailsResponse,
+  MovieSummary,
   Platform,
   Region,
   TmdbVideo,
@@ -21,6 +22,8 @@ import { API_CONFIG } from './tokens';
 
 const FALLBACK_LANGUAGE = 'en-US';
 const MIN_VOTES = 300;
+/** Searches kept in memory; older ones are dropped first. */
+const SEARCH_CACHE_SIZE = 50;
 /** With a platform filter, only what can be started right away: subscription or free. Not rent or buy. */
 const PLAYABLE_NOW = 'flatrate|free|ads';
 
@@ -49,6 +52,7 @@ export class TmdbService {
   private readonly detailsCache = new Map<number, Promise<MovieDetails>>();
   private readonly platformsCache = new Map<Region, Promise<Platform[]>>();
   private regionsRequest: Promise<Region[]> | null = null;
+  private readonly searchCache = new Map<string, Promise<MovieSummary[]>>();
 
   imageUrl(path: string, size: PosterSize): string {
     return `${this.config.imageBaseUrl}/${size}${path}`;
@@ -95,6 +99,24 @@ export class TmdbService {
         ...res,
         results: res.results.map((m) => ({ ...m, title: normalizeRo(m.title) })),
       }));
+    });
+  }
+
+  /** Movies whose title matches, most relevant first: the first page of TMDB results. */
+  search(query: string): Promise<MovieSummary[]> {
+    const text = query.trim();
+    const key = text.toLocaleLowerCase(this.t.locale);
+    if (!this.searchCache.has(key) && this.searchCache.size >= SEARCH_CACHE_SIZE) {
+      this.searchCache.delete(this.searchCache.keys().next().value as string);
+    }
+    return this.cached(this.searchCache, key, async () => {
+      const res = await this.get<DiscoverPage>('/3/search/movie', {
+        query: text,
+        include_adult: 'false',
+        language: this.t.tmdbLanguage,
+        page: '1',
+      });
+      return res.results.map((m) => ({ ...m, title: normalizeRo(m.title) }));
     });
   }
 

@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { PlatformGroups, groupPlatforms } from '../core/platforms';
+import { InstallPrompt } from '../core/install-prompt';
 import { DetectedRegion, FALLBACK_REGIONS, regionGroups } from '../core/region';
 import { Settings } from '../core/storage.service';
 import { TmdbService } from '../core/tmdb.service';
@@ -28,6 +29,7 @@ import {
 import { LANGUAGES, LANGUAGE_NAMES, Language } from '../i18n/language';
 import { STRINGS } from '../i18n/strings';
 import { Icon } from './icon';
+import { InstallOffer } from './install-offer';
 import { ModalDialog } from './modal-dialog';
 
 /** One platform checkbox with its logo. */
@@ -58,7 +60,7 @@ type PlatformsState = { region: Region; groups: PlatformGroups } | 'loading' | '
 @Component({
   selector: 'app-settings-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModalDialog, Icon, PlatformChoice],
+  imports: [ModalDialog, Icon, PlatformChoice, InstallOffer],
   template: `
     <dialog class="sheet" [appModal]="open()" (closed)="closed.emit()" #modal="appModal" aria-labelledby="settings-title">
       <div class="sheet-inner">
@@ -225,6 +227,11 @@ type PlatformsState = { region: Region; groups: PlatformGroups } | 'loading' | '
           <p class="hint confirm" role="status">{{ confirmation() }}</p>
         </div>
 
+        <div class="field install-section">
+          <p class="field-legend">{{ t.install.title }}</p>
+          <app-install-offer [mode]="install.mode()" (install)="installApp()" />
+        </div>
+
         <button type="button" class="link-btn" (click)="about.emit()">{{ t.settings.about }}</button>
       </div>
     </dialog>
@@ -244,6 +251,7 @@ export class SettingsPanel {
 
   protected readonly t = inject(STRINGS);
   private readonly tmdb = inject(TmdbService);
+  protected readonly install = inject(InstallPrompt);
   private readonly platformList = viewChild<ElementRef<HTMLElement>>('platformList');
   protected readonly languages: readonly Language[] = LANGUAGES;
   protected readonly languageNames = LANGUAGE_NAMES;
@@ -306,6 +314,10 @@ export class SettingsPanel {
     this.change.emit({ platforms: { ...this.settings().platforms, [this.region()]: [] } });
     // The button disappears with the last tick; keep focus inside the list.
     this.platformList()?.nativeElement.querySelector('input')?.focus();
+  }
+
+  protected installApp(): void {
+    void this.install.install();
   }
 
   protected pickRegion(event: Event): void {

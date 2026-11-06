@@ -27,6 +27,7 @@ export const en: Dictionary = {
 
   header: {
     openHistory: 'History and saved films',
+    openSearch: 'Search for a film',
     openSettings: 'Settings',
     tokens: (left, total) => `Tokens: ${left} of ${total}`,
   },
@@ -178,6 +179,29 @@ export const en: Dictionary = {
     newNight: 'New night',
     newNightHint: 'You get 3 tokens again, tonight’s films can come up again, and the veto is cleared.',
     about: 'About Spinema',
+  },
+
+  search: {
+    title: 'Search for a film',
+    label: 'Film title',
+    hint: 'Type at least 2 letters of the title.',
+    loading: 'Searching…',
+    results: (count) => (count === 1 ? 'One film found.' : `${count} films found.`),
+    none: (query) => `No films for “${query}”.`,
+    error: 'Couldn’t search. Check your connection and try again.',
+  },
+
+  install: {
+    title: 'App on your home screen',
+    pitch: 'Put Spinema on your home screen: it opens like an app, full screen.',
+    action: 'Install',
+    dismiss: 'Not now',
+    iosBefore: 'Put Spinema on your home screen: in Safari, tap',
+    iosShare: 'Share',
+    iosAfter: ', then “Add to Home Screen”.',
+    gotIt: 'Got it',
+    installed: 'Spinema is installed on this device.',
+    unavailable: 'Look in your browser’s menu for “Install app” or “Add to Home screen”.',
   },
 
   pwa: {

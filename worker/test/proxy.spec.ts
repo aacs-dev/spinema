@@ -3,16 +3,17 @@ import worker, { type Env } from '../src/index';
 import { buildUpstreamUrl, matchRoute, parseAllowedOrigins, sanitizeSearch } from '../src/proxy';
 
 describe('matchRoute', () => {
-  it('allows only the five TMDB paths', () => {
+  it('allows only the six TMDB paths', () => {
     expect(matchRoute('/3/genre/movie/list')?.ttl).toBe(24 * 3600);
     expect(matchRoute('/3/discover/movie')?.ttl).toBe(3600);
     expect(matchRoute('/3/movie/550')?.ttl).toBe(6 * 3600);
     expect(matchRoute('/3/watch/providers/movie')?.kind).toBe('providers');
     expect(matchRoute('/3/watch/providers/regions')).toEqual({ kind: 'regions', ttl: 24 * 3600 });
+    expect(matchRoute('/3/search/movie')).toEqual({ kind: 'search', ttl: 3600 });
   });
 
   it('rejects everything else', () => {
-    for (const path of ['/', '/3/movie/550/credits', '/3/movie/abc', '/3/search/movie', '/3/account', '/3/genre/tv/list', '/3/watch/providers/tv', '/3/watch/providers/regions/x']) {
+    for (const path of ['/', '/3/movie/550/credits', '/3/movie/abc', '/3/search/tv', '/3/search/multi', '/3/search/person', '/3/account', '/3/genre/tv/list', '/3/watch/providers/tv', '/3/watch/providers/regions/x']) {
       expect(matchRoute(path)).toBeNull();
     }
   });
@@ -86,7 +87,7 @@ describe('worker fetch', () => {
   });
 
   it('returns 404 for paths outside the allowlist', async () => {
-    const res = await call('/3/search/movie?query=x');
+    const res = await call('/3/search/tv?query=x');
     expect(res.status).toBe(404);
     expect(fetchMock).not.toHaveBeenCalled();
   });

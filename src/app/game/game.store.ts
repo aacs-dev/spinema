@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { LibraryService } from '../core/library.service';
-import { NightService } from '../core/night.service';
+import { NightService, SPIN_COST } from '../core/night.service';
 import { PickResult, PickerService } from '../core/picker.service';
 import { randomInt } from '../core/rng';
 import { SettingsService } from '../core/settings.service';
@@ -142,10 +142,10 @@ export class GameStore {
     const genres = this.wheelGenres();
     if (genres.length === 0) return;
 
-    // A night that ended while the page stayed open starts over first, so its free first spin applies.
+    // A night that ended while the page stayed open starts over first, with its tokens back.
     this.night.refresh();
     // Re-trying after an empty pool or an error does not cost another token.
-    const cost = from === 'empty' || from === 'error' ? 0 : this.night.spinCost();
+    const cost = from === 'empty' || from === 'error' ? 0 : SPIN_COST;
     if (!this.night.trySpend(cost)) return;
     if (cost > 0) this.announce(this.t.announce.tokenSpent(this.night.tokens()));
 

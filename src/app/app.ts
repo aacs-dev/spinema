@@ -1,12 +1,13 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, afterNextRender, computed, effect, inject, signal } from '@angular/core';
 import { MovieCard } from './card/movie-card';
 import { AppStatus } from './core/app-status.service';
+import { InstallPrompt } from './core/install-prompt';
 import { LibraryService } from './core/library.service';
 import { NightService } from './core/night.service';
 import { SettingsService } from './core/settings.service';
 import { SoundService } from './core/sound.service';
-import { Settings } from './core/storage.service';
+import { Settings, StorageService } from './core/storage.service';
 import { BackNavigation } from './game/back-navigation';
 import { GameStore } from './game/game.store';
 import { GroupVeto } from './game/group-veto';
@@ -15,12 +16,17 @@ import { PosterReel } from './reel/poster-reel';
 import { AboutDialog } from './ui/about-dialog';
 import { Autofocus } from './ui/autofocus';
 import { HistoryDrawer } from './ui/history-drawer';
+import { InstallOffer } from './ui/install-offer';
 import { Icon } from './ui/icon';
 import { SettingsPanel } from './ui/settings-panel';
 import { TokenCounter } from './ui/token-counter';
+import { SearchDialog } from './ui/search-dialog';
 import { TrailerModal } from './ui/trailer-modal';
 import { VetoPanel } from './ui/veto-panel';
 import { GenreWheel } from './wheel/genre-wheel';
+
+/** After the start screen shows; a spin takes over 8 s, so the ticket is in long before it is needed. */
+const TICKET_PRELOAD_MS = 1500;
 
 @Component({
   selector: 'app-root',
@@ -39,6 +45,8 @@ import { GenreWheel } from './wheel/genre-wheel';
     AboutDialog,
     TrailerModal,
     VetoPanel,
+    SearchDialog,
+    InstallOffer,
   ],
   host: {
     '(document:visibilitychange)': 'onVisibilityChange()',
@@ -57,10 +65,14 @@ export class App {
   protected readonly sound = inject(SoundService);
   protected readonly veto = inject(GroupVeto);
   protected readonly status = inject(AppStatus);
+  protected readonly install = inject(InstallPrompt);
+  private readonly storage = inject(StorageService);
+  private readonly installDismissed = signal(this.storage.read('installDismissed') ?? false);
   private readonly window = inject(DOCUMENT).defaultView;
 
   protected readonly settingsOpen = signal(false);
   protected readonly historyOpen = signal(false);
+  protected readonly searchOpen = signal(false);
   protected readonly aboutOpen = signal(false);
   protected readonly trailerOpen = signal(false);
   /** After the first visit, returning to the wheel moves focus onto it. */
@@ -73,7 +85,7 @@ export class App {
     if (this.veto.inProgress()) return this.t.veto.wheelWaiting;
     if (this.store.spinning()) return this.t.wheel.spinning;
     if (this.outOfTokens()) return this.t.wheel.noTokens;
-    return this.night.spinCost() > 0 ? this.t.wheel.costHint : this.t.wheel.hint;
+    return this.night.hadResult() ? this.t.wheel.costHint : this.t.wheel.hint;
   });
 
   protected readonly runtimeLine = computed(() => {
@@ -96,6 +108,13 @@ export class App {
     return count > 0 ? this.t.schedule.myPlatforms(count) : this.t.schedule.allPlatforms;
   });
 
+  /** Only where the browser allows it, only after a first ticket, and never again once closed. */
+  protected readonly showInstallOffer = computed(() => {
+    const mode = this.install.mode();
+    const engaged = this.night.hadResult() || this.library.history().length > 0;
+    return (mode === 'prompt' || mode === 'ios') && engaged && !this.installDismissed();
+  });
+
   protected readonly litIndex = computed(() =>
     this.store.phase() === 'genreChosen' ? this.store.genreIndex() : null,
   );
@@ -108,6 +127,11 @@ export class App {
     void this.store.init();
     effect(() => {
       if (this.store.view() !== 'wheel') this.focusWheel.set(true);
+    });
+    // The ticket is deferred out of the first load; fetch it once the start screen is up, so it
+    // is ready before the first spin ends. Same chunk as the @defer block, so it loads only once.
+    afterNextRender(() => {
+      setTimeout(() => void import('./card/movie-card').catch(() => undefined), TICKET_PRELOAD_MS);
     });
   }
 
@@ -139,6 +163,21 @@ export class App {
   protected openFromLibrary(id: number): void {
     this.historyOpen.set(false);
     void this.store.openMovie(id, 'list');
+  }
+
+  /** A film found by title opens on a ticket, like one from the history: no wheel, no token. */
+  protected openFromSearch(id: number): void {
+    this.searchOpen.set(false);
+    void this.store.openMovie(id, 'list');
+  }
+
+  protected installApp(): void {
+    void this.install.install();
+  }
+
+  protected dismissInstall(): void {
+    this.installDismissed.set(true);
+    this.storage.write('installDismissed', true);
   }
 
   protected openAbout(): void {

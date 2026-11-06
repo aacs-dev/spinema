@@ -122,8 +122,8 @@ describe('GameStore', () => {
     expect(store.view()).toBe('card');
     expect(store.movie()?.id).toBe(100);
     expect(store.origin()).toBe('spin');
-    // The first spin of the night is free; the result is remembered for exclusion.
-    expect(night.tokens()).toBe(3);
+    // Every spin costs a token, the first included; the result is remembered for exclusion.
+    expect(night.tokens()).toBe(2);
     expect(night.night().seenIds).toEqual([100]);
   });
 
@@ -176,7 +176,7 @@ describe('GameStore', () => {
 
     await store.respinMovie();
     expect(phases).toEqual(['loadingMovies', 'spinningReel', 'result']);
-    expect(night.tokens()).toBe(2);
+    expect(night.tokens()).toBe(1);
     expect(store.genre()).toBe(genre);
     expect(store.movie()?.id).toBe(101);
   });
@@ -194,31 +194,33 @@ describe('GameStore', () => {
     await spin;
     expect(phases[0]).toBe('spinningGenre');
     expect(phases.at(-1)).toBe('result');
-    expect(night.tokens()).toBe(2);
+    expect(night.tokens()).toBe(1);
   });
 
-  it('after 06:00 the first spin is free again, even if the page stayed open overnight', async () => {
+  it('after 06:00 the tokens are back, even if the page stayed open overnight', async () => {
     let now = new Date(2026, 9, 26, 21).getTime();
     const { store, night } = setup({ now: () => now });
     await store.init();
     await store.spin();
-    expect(night.spinCost()).toBe(1);
+    await store.respinMovie();
+    expect(night.tokens()).toBe(1);
 
     now = new Date(2026, 9, 27, 6, 5).getTime();
     store.backToWheel();
     await store.spin();
-    expect(night.tokens()).toBe(3);
-    expect(night.night().seenIds).toEqual([101]);
+    expect(night.tokens()).toBe(2);
+    expect(night.night().seenIds).toEqual([102]);
   });
 
-  it('refuses to re-spin at 0 tokens and keeps the movie', async () => {
+  it('3 tokens are 3 tries: at 0 it refuses to re-spin and keeps the movie', async () => {
     const { store, night } = setup();
     await store.init();
     await store.spin();
     await store.respinMovie();
     await store.respinMovie();
-    await store.respinMovie();
     expect(night.tokens()).toBe(0);
+    expect(night.canSpin()).toBe(false);
+    expect(night.night().seenIds).toHaveLength(3);
     const kept = store.movie();
     await store.respinMovie();
     await store.respinGenre();
@@ -242,7 +244,7 @@ describe('GameStore', () => {
     expect(store.phase()).toBe('result');
     expect(store.movie()?.id).toBe(100);
     expect(store.notice()).toBe('Notat ca văzut. Nu mai iese la tragere.');
-    expect(night.tokens()).toBe(3);
+    expect(night.tokens()).toBe(2);
 
     // A new night forgets tonight's results, not what was already seen.
     night.reset();
@@ -276,7 +278,8 @@ describe('GameStore', () => {
 
     await store.spin();
     expect(store.phase()).toBe('result');
-    expect(night.tokens()).toBe(3);
+    // The spin that came up empty cost its token; trying again from there is free.
+    expect(night.tokens()).toBe(2);
   });
 
   it('goes to the error state when movies cannot be loaded, and retries without charging', async () => {
@@ -296,7 +299,7 @@ describe('GameStore', () => {
     store.retry();
     await vi.waitFor(() => expect(store.phase()).toBe('result'));
     expect(store.movie()?.id).toBe(7);
-    expect(night.tokens()).toBe(3);
+    expect(night.tokens()).toBe(2);
   });
 
   it('goes to the error state when the winner\'s details fail', async () => {
@@ -334,14 +337,14 @@ describe('GameStore', () => {
     expect(store.movie()?.id).toBe(550);
   });
 
-  it('"Învârte și tu" clears the link and the visitor\'s first spin is free', async () => {
+  it('"Învârte și tu" clears the link, and the visitor\'s spin costs a token like any other', async () => {
     const { store, share, night } = setup({ sharedId: 550 });
     await store.init();
     store.backToWheel();
     expect(store.phase()).toBe('idle');
     expect(share.clearFilmParam).toHaveBeenCalled();
     await store.spin();
-    expect(night.tokens()).toBe(3);
+    expect(night.tokens()).toBe(2);
   });
 
   it('reports a shared movie that no longer exists', async () => {

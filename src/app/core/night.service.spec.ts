@@ -37,17 +37,15 @@ describe('NightService', () => {
     now = at(26, 20);
   });
 
-  it('starts a night with 3 tokens and a free first spin', () => {
+  it('starts a night with 3 tokens and no result yet', () => {
     const night = create();
     expect(night.tokens()).toBe(TOKENS_PER_NIGHT);
-    expect(night.spinCost()).toBe(0);
+    expect(night.hadResult()).toBe(false);
     expect(night.canSpin()).toBe(true);
   });
 
-  it('charges one token per spin once a result has been shown', () => {
+  it('3 tokens are 3 spins', () => {
     const night = create();
-    night.markSeen(550);
-    expect(night.spinCost()).toBe(1);
     expect(night.trySpend(1)).toBe(true);
     expect(night.trySpend(1)).toBe(true);
     expect(night.trySpend(1)).toBe(true);
@@ -145,7 +143,7 @@ describe('NightService', () => {
     night.setVetoes([27]);
     night.reset();
     expect(night.tokens()).toBe(3);
-    expect(night.spinCost()).toBe(0);
+    expect(night.hadResult()).toBe(false);
     expect(night.vetoedGenreIds()).toEqual([]);
   });
 

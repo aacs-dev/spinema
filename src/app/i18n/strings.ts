@@ -34,6 +34,7 @@ export interface Dictionary {
 
   header: {
     openHistory: string;
+    openSearch: string;
     openSettings: string;
     tokens: (left: number, total: number) => string;
   };
@@ -198,6 +199,30 @@ export interface Dictionary {
     newNight: string;
     newNightHint: string;
     about: string;
+  };
+
+  search: {
+    title: string;
+    label: string;
+    hint: string;
+    loading: string;
+    results: (count: number) => string;
+    none: (query: string) => string;
+    error: string;
+  };
+
+  install: {
+    title: string;
+    pitch: string;
+    action: string;
+    dismiss: string;
+    /** iPhone steps, around the share button's name: "În Safari, apasă" [icon] "Partajează" ", apoi …". */
+    iosBefore: string;
+    iosShare: string;
+    iosAfter: string;
+    gotIt: string;
+    installed: string;
+    unavailable: string;
   };
 
   pwa: {

@@ -62,6 +62,8 @@ export interface StoredData {
   watchlist: MovieRef[];
   /** "Am văzut deja": movies that never come up in a pick again. */
   alreadySeen: HistoryEntry[];
+  /** The home-screen offer under the header was closed with "Nu acum". */
+  installDismissed: boolean;
   night: Night;
 }
 
@@ -116,6 +118,7 @@ const parsers: { [K in keyof StoredData]: Parser<StoredData[K]> } = {
   history: parseList(parseHistoryEntry),
   watchlist: parseList(parseMovieRef),
   alreadySeen: parseList(parseHistoryEntry),
+  installDismissed: (raw) => (typeof raw === 'boolean' ? raw : null),
   night: (raw) => {
     if (!isRecord(raw) || typeof raw['tokens'] !== 'number' || typeof raw['startedAt'] !== 'number') return null;
     const seenIds = Array.isArray(raw['seenIds']) ? raw['seenIds'].filter(isId) : [];

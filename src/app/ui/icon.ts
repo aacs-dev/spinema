@@ -10,7 +10,8 @@ export type IconName =
   | 'close'
   | 'back'
   | 'eye'
-  | 'check';
+  | 'check'
+  | 'search';
 
 /** A handful of 24px line icons, inlined so there is no icon font or library. Always decorative. */
 @Component({
@@ -31,6 +32,7 @@ export type IconName =
         @case ('back') { <path d="M19.5 12h-15M10.5 6l-6 6 6 6" /> }
         @case ('eye') { <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /> }
         @case ('check') { <path d="M4.5 12.5l5 5 10-11" /> }
+        @case ('search') { <circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5 20.5 20.5" /> }
       }
     </svg>
   `,

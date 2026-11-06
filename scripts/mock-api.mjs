@@ -133,13 +133,16 @@ function details(id, params) {
   const page = Math.floor((id % 1000) / 20);
   const movie = movieFor(genreId, page, id % 20);
   const english = params.get('language') === 'en-US';
+  // The app's second, English-only request for a missing overview asks for nothing else.
+  const overviewFallback = english && !params.has('append_to_response');
   const genre = GENRES.find((g) => g.id === genreId);
+  const englishOverview = 'A quiet town, a missing reel of film and one long night that changes everything for the people of a small cinema.';
   const overview = english
-    ? 'A quiet town, a missing reel of film and one long night that changes everything for the people of a small cinema.'
+    ? englishOverview
     : id % 7 === 0
       ? ''
       : 'Într-un oraș mic, proiecționistul cinematografului descoperă o bobină care nu figurează în niciun catalog. Pe măsură ce o derulează, întâmplările de pe ecran încep să semene cu viața spectatorilor din sală.';
-  if (english) return { id, title: movie.original_title, original_title: movie.original_title, overview };
+  if (overviewFallback) return { id, title: movie.original_title, original_title: movie.original_title, overview };
   return {
     ...movie,
     overview,
@@ -200,6 +203,17 @@ createServer((req, res) => {
     if (path === '/3/genre/movie/list') return json(res, 200, { genres: GENRES });
     if (path === '/3/discover/movie') return json(res, 200, discover(url.searchParams));
     if (path === '/3/watch/providers/movie') return json(res, 200, platformList());
+    if (path === '/3/search/movie') {
+      // Any mock movie whose title contains the query, ignoring case and diacritics.
+      const fold = (s) => s.normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase();
+      const query = fold(url.searchParams.get('query') ?? '');
+      const results = [];
+      for (const genre of GENRES) for (let page = 1; page <= 2 && results.length < 20; page++) for (let slot = 0; slot < 20 && results.length < 20; slot++) {
+        const movie = movieFor(genre.id, page, slot);
+        if (query && fold(movie.title).includes(query) && !results.some((m) => m.title === movie.title)) results.push(movie);
+      }
+      return json(res, 200, { page: 1, results, total_pages: 1, total_results: results.length });
+    }
     if (path === '/3/watch/providers/regions') {
       return json(res, 200, { results: MOCK_REGIONS.map((code) => ({ iso_3166_1: code, english_name: code, native_name: code })) });
     }

@@ -28,6 +28,7 @@ export const hu: Dictionary = {
 
   header: {
     openHistory: 'Előzmények és mentett filmek',
+    openSearch: 'Filmkeresés',
     openSettings: 'Beállítások',
     tokens: (left, total) => `Zsetonok: ${left} / ${total}`,
   },
@@ -180,6 +181,29 @@ export const hu: Dictionary = {
     newNight: 'Új este',
     newNightHint: 'Újra 3 zsetonod lesz, a ma esti filmek ismét sorra kerülhetnek, és a vétó törlődik.',
     about: 'A Spinemáról',
+  },
+
+  search: {
+    title: 'Filmkeresés',
+    label: 'A film címe',
+    hint: 'Írj be legalább 2 betűt a címből.',
+    loading: 'Keresés…',
+    results: (count) => `${count} találat.`,
+    none: (query) => `Nincs találat erre: „${query}”.`,
+    error: 'Nem sikerült keresni. Ellenőrizd a kapcsolatot, és próbáld újra.',
+  },
+
+  install: {
+    title: 'Alkalmazás a kezdőképernyőn',
+    pitch: 'Tedd ki a Spinemát a kezdőképernyőre: alkalmazásként, teljes képernyőn nyílik meg.',
+    action: 'Telepítés',
+    dismiss: 'Most nem',
+    iosBefore: 'Tedd ki a Spinemát a kezdőképernyőre: a Safariban koppints a',
+    iosShare: 'Megosztás',
+    iosAfter: ' gombra, majd a „Főképernyőhöz adás” pontra.',
+    gotIt: 'Értem',
+    installed: 'A Spinema telepítve van ezen az eszközön.',
+    unavailable: 'Keresd a böngésző menüjében az „Alkalmazás telepítése” vagy a „Hozzáadás a kezdőképernyőhöz” pontot.',
   },
 
   pwa: {

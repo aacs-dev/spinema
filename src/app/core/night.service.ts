@@ -14,9 +14,11 @@ export function nightStartBefore(time: number): number {
   return start.getTime();
 }
 
+/** Every spin costs a token, the night's first included: 3 tokens are 3 tries. */
+export const SPIN_COST = 1;
+
 /**
- * Re-spin tokens for one movie night. The first spin of a night is free; every spin after a
- * result has been shown costs one token. A night lasts until the next 06:00 or until "Seară nouă".
+ * Tokens for one movie night. A night lasts until the next 06:00 or until "Seară nouă".
  */
 @Injectable({ providedIn: 'root' })
 export class NightService {
@@ -26,9 +28,9 @@ export class NightService {
 
   readonly night = this.state.asReadonly();
   readonly tokens = computed(() => this.state().tokens);
-  /** 0 before tonight's first result, 1 afterwards. */
-  readonly spinCost = computed(() => (this.state().seenIds.length === 0 ? 0 : 1));
-  readonly canSpin = computed(() => this.state().tokens >= this.spinCost());
+  readonly canSpin = computed(() => this.state().tokens >= SPIN_COST);
+  /** Whether a movie has come up tonight; the wheel's hint then mentions the cost. */
+  readonly hadResult = computed(() => this.state().seenIds.length > 0);
   readonly lastSeenId = computed(() => this.state().seenIds.at(-1) ?? null);
   readonly vetoedGenreIds = computed(() => this.state().vetoedGenreIds);
 

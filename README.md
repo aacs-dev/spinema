@@ -85,15 +85,15 @@ npx wrangler deploy
 ```
 
 `wrangler deploy` afișează URL-ul Worker-ului. Pune-l în `src/environments/environment.ts` la
-`workerUrl`. Nu e un secret: Worker-ul acceptă doar `GET` pe cinci căi TMDB și doar de la originile
+`workerUrl`. Nu e un secret: Worker-ul acceptă doar `GET` pe șase căi TMDB și doar de la originile
 din `ALLOWED_ORIGINS`.
 
 Ce face proxy-ul (`worker/src/index.ts`):
 
-- permite doar `/3/genre/movie/list`, `/3/discover/movie`, `/3/movie/{id}`, `/3/watch/providers/movie` și `/3/watch/providers/regions` (lista de țări); restul primește 404;
+- permite doar `/3/genre/movie/list`, `/3/discover/movie`, `/3/movie/{id}`, `/3/watch/providers/movie`, `/3/watch/providers/regions` (lista de țări) și `/3/search/movie` (căutarea); restul primește 404;
 - elimină orice parametru `api_key` venit din browser;
 - CORS doar pentru `https://aacs-dev.github.io` și `http://localhost:4200`; alte origini primesc 403;
-- cache cu Cache API: genuri 24 h, discover 1 h, detalii film 6 h, platforme și țări 24 h; trimite și `Cache-Control`, deci și browserul păstrează răspunsurile;
+- cache cu Cache API: genuri 24 h, discover și căutare 1 h, detalii film 6 h, platforme și țări 24 h; trimite și `Cache-Control`, deci și browserul păstrează răspunsurile;
 - erorile TMDB se întorc cu același cod HTTP și un JSON scurt: `{ "error": "tmdb_error", "status": 404, "message": "…" }`.
 
 > Documentația Cloudflare garantează Cache API doar pentru Worker-ele legate de un domeniu propriu.
@@ -130,6 +130,14 @@ parametri de query, nu rute, așa că totul rămâne pe `index.html` și Pages n
 - **Instalare.** Pe Android, Chrome oferă „Instalează aplicația” sau „Adaugă pe ecranul de pornire”.
   Pe iPhone: Safari → butonul Partajează → „Adaugă pe ecranul principal”. Aplicația se deschide
   apoi pe tot ecranul, cu iconița roții.
+- **Oferta din aplicație** (`src/app/core/install-prompt.ts`, `src/app/ui/install-offer.ts`). Unde
+  browserul o permite (Chrome, Edge, Samsung Internet, pe telefon și pe calculator), un buton
+  „Instalează” deschide fereastra lui de instalare. Pe iPhone și iPad, unde nu există așa ceva,
+  apar pașii din meniul Partajează. Oferta apare ca o bandă sub antet abia după primul bilet, se
+  închide definitiv cu „Nu acum” și rămâne mereu în setări („Aplicația pe ecranul telefonului”).
+  Nu apare deloc dacă aplicația rulează deja instalată. Evenimentul browserului
+  (`beforeinstallprompt`) e prins în `main.ts`, înainte de pornire, ca să nu se piardă cât se
+  încarcă textele în engleză sau maghiară; Chrome îl dă o singură dată pe încărcare de pagină.
 - **Fișiere.** `public/manifest.webmanifest` (nume, culori, iconițe) și `public/icons/`:
   `icon.svg` și `icon-maskable.svg` sunt sursa, PNG-urile (192, 512, maskable 512, apple-touch 180)
   sunt randate din ele. Varianta „maskable” ține roata în cercul central de 80 %, pe care Android îl
@@ -214,9 +222,10 @@ scripts/       mock API pentru dezvoltare
   `error` și `empty`. Tranzițiile permise sunt în `src/app/game/spin-machine.ts`; orice altă tranziție
   aruncă o eroare. `loadingMovies → result` (fără bobină) e folosit pentru linkuri trimise, filme din
   listă și reduced motion.
-- **Jetoane.** Prima tură a serii e gratuită. După ce a apărut un rezultat, orice tură nouă costă un
-  jeton: alt film din același gen sau alt gen. Reîncărcarea paginii nu dă o tură gratuită. Din starea
-  „Bobina e goală” sau după o eroare, încercarea din nou nu mai costă. Seara (`{ tokens, startedAt, seenIds }`)
+- **Jetoane.** 3 jetoane pe seară înseamnă 3 încercări: fiecare tură costă un jeton, și prima (prima
+  învârtire, alt film din același gen sau alt gen). Brief-ul lăsa prima tură gratuită, ceea ce dădea
+  4 filme pe seară. Reîncărcarea paginii nu dă o tură în plus. Din starea „Bobina e goală” sau după o
+  eroare, încercarea din nou nu mai costă. Seara (`{ tokens, startedAt, seenIds }`)
   se resetează în fiecare dimineață la 06:00, după ora telefonului, sau din „Seară nouă”. Brief-ul cerea
   6 ore de la deschiderea aplicației; resetarea la 06:00 nu cade niciodată în mijlocul unei seri de film,
   iar o sesiune care trece de miezul nopții rămâne în seara ei.
@@ -255,6 +264,11 @@ scripts/       mock API pentru dezvoltare
     Bifele de la „Platformele mele” se păstrează pe țară.
   - **După actualizare, republică Worker-ul**, ca să permită calea nouă:
     `cd worker`, apoi `npx wrangler deploy`. Până atunci, aplicația merge cu lista locală de țări.
+- **Căutare.** Butonul ⌕ din antet deschide „Caută un film” (`src/app/ui/search-dialog.ts`). Caută după
+  titlu, în limba interfeței, de la 2 litere încolo, după o pauză de 300 ms în scris; un răspuns întârziat
+  pentru o căutare mai veche e ignorat. Enter deschide primul rezultat. Filmul ales se deschide pe bilet ca
+  unul din istoric: fără roată și fără jeton, pentru că jetoanele țin de joc, nu de căutare. Prin Worker,
+  pe `/3/search/movie`; doar filme, nu persoane sau seriale.
 - **Perioada și nota minimă.** În setări, lângă durată: deceniul (anii ’60 … anii 2020), trimis ca
   `primary_release_date.gte/lte`, și nota TMDB minimă (6, 7 sau 8), trimisă ca `vote_average.gte`.
   Nota e media voturilor, de încredere pentru că roata cere oricum cel puțin 300 de voturi. Pe

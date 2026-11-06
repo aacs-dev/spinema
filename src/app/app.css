@@ -67,6 +67,12 @@
   font-size: 0.9375rem;
 }
 
+/* The install offer is a block inside the strip, not inline text. */
+.install-bar {
+  display: block;
+  padding-block: 0.5rem;
+}
+
 .status-action {
   min-height: 40px;
   font-weight: 700;

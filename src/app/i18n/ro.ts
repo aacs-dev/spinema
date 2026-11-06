@@ -23,6 +23,7 @@ export const ro: Dictionary = {
 
   header: {
     openHistory: 'Istoric și filme salvate',
+    openSearch: 'Caută un film',
     openSettings: 'Setări',
     tokens: (left, total) => `Jetoane: ${left} din ${total}`,
   },
@@ -175,6 +176,29 @@ export const ro: Dictionary = {
     newNight: 'Seară nouă',
     newNightHint: 'Primești din nou 3 jetoane, filmele de diseară pot ieși din nou, iar vetoul se anulează.',
     about: 'Despre Spinema',
+  },
+
+  search: {
+    title: 'Caută un film',
+    label: 'Titlul filmului',
+    hint: 'Scrie cel puțin 2 litere din titlu.',
+    loading: 'Se caută…',
+    results: (count) => (count === 1 ? 'Un film găsit.' : `${count}${de(count)} filme găsite.`),
+    none: (query) => `Niciun film pentru „${query}”.`,
+    error: 'Nu am putut căuta. Verifică conexiunea și încearcă din nou.',
+  },
+
+  install: {
+    title: 'Aplicația pe ecranul telefonului',
+    pitch: 'Pune Spinema pe ecranul telefonului: se deschide ca o aplicație, pe tot ecranul.',
+    action: 'Instalează',
+    dismiss: 'Nu acum',
+    iosBefore: 'Pune Spinema pe ecranul telefonului: în Safari, apasă',
+    iosShare: 'Partajează',
+    iosAfter: ', apoi „Adaugă pe ecranul principal”.',
+    gotIt: 'Am înțeles',
+    installed: 'Spinema e instalată pe acest dispozitiv.',
+    unavailable: 'Caută în meniul browserului „Instalează aplicația” sau „Adaugă pe ecranul de pornire”.',
   },
 
   pwa: {

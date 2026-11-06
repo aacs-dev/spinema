@@ -45,6 +45,10 @@ describe.each([
   it('never appends arrows to actions', () => {
     expect(strings.filter((s) => s.includes('→'))).toEqual([]);
   });
+
+  it('never shows an unfilled placeholder, as a quoted string instead of a template would', () => {
+    expect(strings.filter((s) => s.includes('${'))).toEqual([]);
+  });
 });
 
 describe('orthography', () => {
